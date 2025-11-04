@@ -1,8 +1,20 @@
 mod utils;
 
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
-use tokio::{fs, process::Command};
+use serde_json::json;
+use std::{
+    path::PathBuf,
+    process::Stdio,
+    sync::Arc,
+    time::{SystemTime, UNIX_EPOCH},
+};
+use tauri::Window;
+use tokio::{
+    fs,
+    io::{AsyncBufReadExt, BufReader},
+    process::Command,
+    sync::Mutex,
+};
 use utils::yt_dlp::{self, BinarySource};
 use which::which;
 
@@ -23,6 +35,7 @@ struct DownloadRequest {
     mode: DownloadMode,
     browser: Option<String>,
     output_dir: Option<String>,
+    session_id: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -70,16 +83,31 @@ async fn install_yt_dlp() -> Result<YtDlpStatus, String> {
 }
 
 #[tauri::command]
-async fn download_media(request: DownloadRequest) -> Result<DownloadResponse, String> {
-    let url = request.url.trim();
+async fn download_media(window: Window, request: DownloadRequest) -> Result<DownloadResponse, String> {
+    let DownloadRequest {
+        url,
+        mode,
+        browser,
+        output_dir,
+        session_id,
+    } = request;
+
+    let url = url.trim().to_string();
     if url.is_empty() {
         return Err("请输入有效的视频链接".into());
     }
 
+    let session_id = session_id.unwrap_or_else(|| {
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|duration| format!("session-{}", duration.as_millis()))
+            .unwrap_or_else(|_| "session-0".into())
+    });
+    let session_id = Arc::new(session_id);
+
     let (binary_path, _) = yt_dlp::ensure_available().await?;
 
-    let mut output_dir = request
-        .output_dir
+    let mut output_dir = output_dir
         .as_deref()
         .map(str::trim)
         .filter(|value| !value.is_empty())
@@ -104,8 +132,7 @@ async fn download_media(request: DownloadRequest) -> Result<DownloadResponse, St
 
     let is_youtube = url.contains("youtube.com") || url.contains("youtu.be");
     if is_youtube {
-        let browser = request
-            .browser
+        let browser = browser
             .as_deref()
             .map(str::trim)
             .filter(|value| !value.is_empty())
@@ -114,7 +141,7 @@ async fn download_media(request: DownloadRequest) -> Result<DownloadResponse, St
         args.push(browser.to_string());
     }
 
-    match request.mode {
+    match mode {
         DownloadMode::Audio => {
             ensure_ffmpeg_available()?;
             args.push("-f".into());
@@ -134,23 +161,114 @@ async fn download_media(request: DownloadRequest) -> Result<DownloadResponse, St
         }
     }
 
-    args.push(url.to_string());
+    args.push(url.clone());
 
-    let output = Command::new(&binary_path)
-        .args(&args)
-        .output()
-        .await
+    let mut command = Command::new(&binary_path);
+    command.args(&args);
+    command.stdout(Stdio::piped());
+    command.stderr(Stdio::piped());
+    command.kill_on_drop(true);
+
+    let mut child = command
+        .spawn()
         .map_err(|err| format!("执行 yt-dlp 失败: {err}"))?;
 
-    let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+    let stdout_buffer = Arc::new(Mutex::new(Vec::new()));
+    let stderr_buffer = Arc::new(Mutex::new(Vec::new()));
+
+    let stdout_task = if let Some(stdout) = child.stdout.take() {
+        let window = window.clone();
+        let session_id = Arc::clone(&session_id);
+        let buffer = Arc::clone(&stdout_buffer);
+        Some(tokio::spawn(async move {
+            forward_stream(stdout, window, session_id, "stdout", buffer).await
+        }))
+    } else {
+        None
+    };
+
+    let stderr_task = if let Some(stderr) = child.stderr.take() {
+        let window = window.clone();
+        let session_id = Arc::clone(&session_id);
+        let buffer = Arc::clone(&stderr_buffer);
+        Some(tokio::spawn(async move {
+            forward_stream(stderr, window, session_id, "stderr", buffer).await
+        }))
+    } else {
+        None
+    };
+
+    let status = child
+        .wait()
+        .await
+        .map_err(|err| format!("等待 yt-dlp 结束失败: {err}"))?;
+
+    if let Some(task) = stdout_task {
+        match task.await {
+            Ok(Ok(())) => {}
+            Ok(Err(err)) => eprintln!("读取 yt-dlp 标准输出失败: {err}"),
+            Err(err) => eprintln!("读取 yt-dlp 标准输出任务失败: {err}"),
+        }
+    }
+
+    if let Some(task) = stderr_task {
+        match task.await {
+            Ok(Ok(())) => {}
+            Ok(Err(err)) => eprintln!("读取 yt-dlp 标准错误失败: {err}"),
+            Err(err) => eprintln!("读取 yt-dlp 标准错误任务失败: {err}"),
+        }
+    }
+
+    let stdout = {
+        let lines = stdout_buffer.lock().await;
+        lines.join("\n")
+    };
+    let stdout = stdout.trim().to_string();
+
+    let stderr = {
+        let lines = stderr_buffer.lock().await;
+        lines.join("\n")
+    };
+    let stderr = stderr.trim().to_string();
 
     Ok(DownloadResponse {
-        success: output.status.success(),
+        success: status.success(),
         stdout,
         stderr,
         output_dir: path_to_string(&output_dir),
     })
+}
+
+async fn forward_stream<R>(
+    reader: R,
+    window: Window,
+    session_id: Arc<String>,
+    stream: &'static str,
+    buffer: Arc<Mutex<Vec<String>>>,
+) -> Result<(), std::io::Error>
+where
+    R: tokio::io::AsyncRead + Unpin,
+{
+    let mut lines = BufReader::new(reader).lines();
+    while let Some(line) = lines.next_line().await? {
+        {
+            let mut entries = buffer.lock().await;
+            entries.push(line.clone());
+        }
+
+        if let Err(err) = window.emit(
+            "download-log",
+            json!({
+                "sessionId": session_id.as_ref(),
+                "stream": stream,
+                "line": line,
+            }),
+        ) {
+            eprintln!("Failed to emit log event: {err}");
+        }
+    }
+
+    Ok(())
 }
 
 #[tauri::command]

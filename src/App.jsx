@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { openPath } from "@tauri-apps/plugin-opener";
 import "./App.css";
 
@@ -44,9 +45,50 @@ function App() {
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
+  const activeSessionIdRef = useRef(null);
+  const hasRealtimeLogsRef = useRef(false);
+
   useEffect(() => {
     refreshYtStatus();
     loadDefaultOutputDir();
+  }, []);
+
+  useEffect(() => {
+    let unlistenLog;
+
+    listen("download-log", (event) => {
+      const payload = event.payload;
+      if (!payload || typeof payload !== "object") {
+        return;
+      }
+
+      const { sessionId, line, stream } = payload;
+      if (typeof sessionId !== "string" || sessionId !== activeSessionIdRef.current) {
+        return;
+      }
+      if (typeof line !== "string") {
+        return;
+      }
+
+      hasRealtimeLogsRef.current = true;
+
+      const prefix = stream === "stderr" ? "[stderr] " : "";
+      const formattedLine = prefix ? `${prefix}${line}` : line;
+
+      setLogOutput((prev) => (prev ? `${prev}\n${formattedLine}` : formattedLine));
+    })
+      .then((unlisten) => {
+        unlistenLog = unlisten;
+      })
+      .catch((err) => {
+        console.error("监听日志事件失败", err);
+      });
+
+    return () => {
+      if (unlistenLog) {
+        unlistenLog();
+      }
+    };
   }, []);
 
   const refreshYtStatus = async () => {
@@ -104,6 +146,16 @@ function App() {
       return;
     }
 
+    const sessionId =
+      typeof globalThis !== "undefined" &&
+      globalThis.crypto &&
+      typeof globalThis.crypto.randomUUID === "function"
+        ? globalThis.crypto.randomUUID()
+        : `${Date.now()}`;
+
+    activeSessionIdRef.current = sessionId;
+    hasRealtimeLogsRef.current = false;
+
     setIsDownloading(true);
     setErrorMessage("");
     setSuccessMessage("");
@@ -116,13 +168,19 @@ function App() {
           mode: downloadType,
           browser,
           outputDir,
+          sessionId,
         },
       });
 
       const stdout = typeof response.stdout === "string" ? response.stdout : "";
       const stderr = typeof response.stderr === "string" ? response.stderr : "";
       const combined = [stdout, stderr].filter(Boolean).join("\n\n");
-      setLogOutput(combined || "命令执行完成。");
+
+      if (!hasRealtimeLogsRef.current) {
+        setLogOutput(combined || "命令执行完成。");
+      } else {
+        setLogOutput((prev) => prev || "命令执行完成。");
+      }
 
       if (response.success) {
         const targetDir = response.outputDir || outputDir;

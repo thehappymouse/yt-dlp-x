@@ -41,6 +41,7 @@ function App() {
   const [checkingYt, setCheckingYt] = useState(true);
   const [installing, setInstalling] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(null);
   const [logOutput, setLogOutput] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -53,8 +54,29 @@ function App() {
     loadDefaultOutputDir();
   }, []);
 
+  const formatPercentText = (value) => {
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+      return null;
+    }
+
+    const clamped = Math.min(100, Math.max(0, value));
+    if (clamped === 100) {
+      return "100%";
+    }
+
+    const floored = Math.floor(clamped * 10) / 10;
+    const hasFraction = Math.abs(floored - Math.trunc(floored)) > Number.EPSILON;
+
+    if (hasFraction) {
+      return `${floored.toFixed(1)}%`;
+    }
+
+    return `${Math.trunc(floored)}%`;
+  };
+
   useEffect(() => {
     let unlistenLog;
+    let unlistenProgress;
 
     listen("download-log", (event) => {
       const payload = event.payload;
@@ -84,9 +106,61 @@ function App() {
         console.error("监听日志事件失败", err);
       });
 
+    listen("download-progress", (event) => {
+      const payload = event.payload;
+      if (!payload || typeof payload !== "object") {
+        return;
+      }
+
+      const { sessionId, percent, percentText, eta, speed, total, status, raw } = payload;
+      if (typeof sessionId !== "string" || sessionId !== activeSessionIdRef.current) {
+        return;
+      }
+
+      const parsedPercent =
+        typeof percent === "number" && Number.isFinite(percent) ? Math.min(100, Math.max(0, percent)) : null;
+      const fallbackPercentText = parsedPercent !== null ? formatPercentText(parsedPercent) : null;
+
+      setDownloadProgress((prev) => {
+        const previous =
+          prev ?? {
+            percent: null,
+            percentText: null,
+            eta: null,
+            speed: null,
+            total: null,
+            status: null,
+            raw: null,
+          };
+
+        const nextPercent = parsedPercent !== null ? parsedPercent : previous.percent;
+        const providedPercentText =
+          typeof percentText === "string" && percentText.trim().length > 0 ? percentText.trim() : null;
+
+        return {
+          percent: nextPercent,
+          percentText: providedPercentText ?? (parsedPercent !== null ? fallbackPercentText : previous.percentText),
+          eta: typeof eta === "string" && eta.trim().length > 0 ? eta.trim() : previous.eta,
+          speed: typeof speed === "string" && speed.trim().length > 0 ? speed.trim() : previous.speed,
+          total: typeof total === "string" && total.trim().length > 0 ? total.trim() : previous.total,
+          status: typeof status === "string" && status.trim().length > 0 ? status.trim() : previous.status,
+          raw: typeof raw === "string" && raw.trim().length > 0 ? raw.trim() : previous.raw,
+        };
+      });
+    })
+      .then((unlisten) => {
+        unlistenProgress = unlisten;
+      })
+      .catch((err) => {
+        console.error("监听进度事件失败", err);
+      });
+
     return () => {
       if (unlistenLog) {
         unlistenLog();
+      }
+      if (unlistenProgress) {
+        unlistenProgress();
       }
     };
   }, []);
@@ -157,6 +231,15 @@ function App() {
     hasRealtimeLogsRef.current = false;
 
     setIsDownloading(true);
+    setDownloadProgress({
+      percent: 0,
+      percentText: "0%",
+      eta: null,
+      speed: null,
+      total: null,
+      status: "pending",
+      raw: null,
+    });
     setErrorMessage("");
     setSuccessMessage("");
     setLogOutput("");
@@ -192,6 +275,7 @@ function App() {
       setErrorMessage(`下载失败：${extractErrorMessage(err)}`);
     } finally {
       setIsDownloading(false);
+      setDownloadProgress(null);
       refreshYtStatus();
     }
   };
@@ -225,6 +309,62 @@ function App() {
 
     return downloadType === "video" ? "下载视频" : "下载音频";
   }, [downloadType, isDownloading]);
+
+  const progressPercent = useMemo(() => {
+    if (
+      !downloadProgress ||
+      typeof downloadProgress.percent !== "number" ||
+      !Number.isFinite(downloadProgress.percent)
+    ) {
+      return downloadProgress?.status === "pending" ? 0 : null;
+    }
+
+    return Math.min(100, Math.max(0, downloadProgress.percent));
+  }, [downloadProgress]);
+
+  const progressText = useMemo(() => {
+    if (!downloadProgress) {
+      return "准备中...";
+    }
+
+    if (downloadProgress.status === "pending") {
+      return "准备中...";
+    }
+
+    const hasPercent =
+      typeof downloadProgress.percent === "number" && Number.isFinite(downloadProgress.percent);
+    const percentValue = hasPercent ? Math.min(100, Math.max(0, downloadProgress.percent)) : null;
+
+    const percentLabel =
+      typeof downloadProgress.percentText === "string" && downloadProgress.percentText
+        ? downloadProgress.percentText
+        : percentValue !== null
+        ? formatPercentText(percentValue)
+        : null;
+
+    const etaLabel =
+      downloadProgress.eta && downloadProgress.status === "downloading"
+        ? `剩余 ${downloadProgress.eta}`
+        : downloadProgress.eta && downloadProgress.status === "finished"
+        ? `耗时 ${downloadProgress.eta}`
+        : null;
+
+    const parts = [percentLabel, downloadProgress.total, downloadProgress.speed, etaLabel].filter(
+      (value) => typeof value === "string" && value.length > 0,
+    );
+
+    if (parts.length > 0) {
+      return parts.join(" · ");
+    }
+
+    if (downloadProgress.raw) {
+      return downloadProgress.raw;
+    }
+
+    return "准备中...";
+  }, [downloadProgress]);
+
+  const progressBarWidth = progressPercent ?? (downloadProgress ? 5 : 0);
 
   const ytStatusLabel = checkingYt
     ? "正在检测 yt-dlp..."
@@ -360,13 +500,26 @@ function App() {
         {successMessage && <div className="alert success">{successMessage}</div>}
 
         <div className="form-actions">
-          <button
-            type="submit"
-            className="primary"
-            disabled={isDownloading || !url.trim()}
-          >
-            {downloadButtonLabel}
-          </button>
+          <div className="action-wrapper">
+            <button
+              type="submit"
+              className="primary"
+              disabled={isDownloading || !url.trim()}
+            >
+              {downloadButtonLabel}
+            </button>
+            {isDownloading && (
+              <div className="download-progress">
+                <div className="download-progress-track">
+                  <div
+                    className="download-progress-bar"
+                    style={{ width: `${Math.max(0, Math.min(100, progressBarWidth))}%` }}
+                  />
+                </div>
+                <div className="download-progress-text">{progressText}</div>
+              </div>
+            )}
+          </div>
         </div>
       </form>
 

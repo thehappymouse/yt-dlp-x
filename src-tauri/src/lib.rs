@@ -8,7 +8,7 @@ use std::{
     sync::Arc,
     time::{SystemTime, UNIX_EPOCH},
 };
-use tauri::Window;
+use tauri::{Emitter, Window};
 use tokio::{
     fs,
     io::{AsyncBufReadExt, BufReader},
@@ -107,7 +107,7 @@ async fn download_media(window: Window, request: DownloadRequest) -> Result<Down
 
     let (binary_path, _) = yt_dlp::ensure_available().await?;
 
-    let mut output_dir = output_dir
+    let output_dir = output_dir
         .as_deref()
         .map(str::trim)
         .filter(|value| !value.is_empty())

@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tokio::{fs, process::Command};
 use utils::yt_dlp::{self, BinarySource};
+use which::which;
 
 const DEFAULT_COOKIE_BROWSERS: &str = "chrome,edge,firefox,brave";
 
@@ -115,11 +116,15 @@ async fn download_media(request: DownloadRequest) -> Result<DownloadResponse, St
 
     match request.mode {
         DownloadMode::Audio => {
+            ensure_ffmpeg_available()?;
             args.push("-f".into());
             args.push("bestaudio/best".into());
             args.push("-x".into());
             args.push("--audio-format".into());
             args.push("mp3".into());
+            args.push("--embed-thumbnail".into());
+            args.push("--convert-thumbnails".into());
+            args.push("jpg".into());
         }
         DownloadMode::Video => {
             args.push("-f".into());
@@ -151,6 +156,29 @@ async fn download_media(request: DownloadRequest) -> Result<DownloadResponse, St
 #[tauri::command]
 async fn get_default_download_dir() -> Result<String, String> {
     Ok(path_to_string(&yt_dlp::default_download_dir()))
+}
+
+fn ensure_ffmpeg_available() -> Result<(), String> {
+    if detect_ffmpeg() {
+        Ok(())
+    } else {
+        Err("未检测到系统 ffmpeg，请先安装后再试，以便下载音频并嵌入封面。".into())
+    }
+}
+
+fn detect_ffmpeg() -> bool {
+    if which("ffmpeg").is_ok() {
+        return true;
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        if which("ffmpeg.exe").is_ok() {
+            return true;
+        }
+    }
+
+    false
 }
 
 fn path_to_string(path: &PathBuf) -> String {

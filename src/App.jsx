@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { open } from "@tauri-apps/plugin-opener";
+import { openPath } from "@tauri-apps/plugin-opener";
 import "./App.css";
 
 const BROWSER_OPTIONS = [
@@ -139,12 +139,13 @@ function App() {
   };
 
   const handleOpenDir = async () => {
-    if (!outputDir) {
+    const targetDir = outputDir.trim();
+    if (!targetDir) {
       return;
     }
 
     try {
-      await open(outputDir);
+      await openPath(targetDir);
     } catch (err) {
       setErrorMessage(`无法打开目录：${extractErrorMessage(err)}`);
     }
@@ -283,7 +284,7 @@ function App() {
               type="button"
               className="outline"
               onClick={handleOpenDir}
-              disabled={!outputDir}
+              disabled={!outputDir.trim()}
             >
               打开
             </button>

@@ -1,7 +1,33 @@
-# Tauri + React
+# yt-dlp-x
 
-This template should help get you started developing with Tauri and React in Vite.
+一个基于 **Tauri 2** + **React** 的图形界面工具，封装 `yt-dlp`，为常见视频网站（尤其是 YouTube）提供便捷的音视频下载体验。
 
-## Recommended IDE Setup
+## 功能亮点
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+- 自动检测系统中的 `yt-dlp`，若未安装可在线下载最新版本。
+- 粘贴链接后，可一键选择下载 **最佳画质视频** 或 **纯音频 (MP3)**。
+- 针对 YouTube 链接，默认启用 `--cookies-from-browser`，支持从常用浏览器读取登录态。
+- 默认保存到系统下载目录，可自行修改并快速打开文件夹。
+- 直观的执行日志，方便排查错误。
+
+## 开发指引
+
+```bash
+# 安装依赖
+$ yarn install
+
+# 开发模式（会同时启动前端与 Tauri）
+$ yarn tauri dev
+
+# 生产打包
+$ yarn tauri build
+```
+
+> 首次运行若缺少 `yt-dlp`，应用会自动下载对应平台的可执行文件并保存到应用数据目录。
+
+## 目录结构
+
+- `src/` — React 前端界面
+- `src-tauri/` — Tauri 2 Rust 主程序、命令处理与 `yt-dlp` 管理逻辑
+
+欢迎根据自身需求进一步扩展，例如加入任务队列、批量下载、字幕获取等功能。

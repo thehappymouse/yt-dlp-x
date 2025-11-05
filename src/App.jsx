@@ -10,8 +10,6 @@ import {
   Flex,
   Form,
   Input,
-  List,
-  Modal,
   Progress,
   Select,
   Segmented,
@@ -20,16 +18,17 @@ import {
   Typography,
 } from "antd";
 import {
+  AudioOutlined,
   CheckCircleOutlined,
   DownloadOutlined,
   ExclamationCircleOutlined,
   FolderOpenOutlined,
-  GithubOutlined,
   InfoCircleOutlined,
   LoadingOutlined,
-  MailOutlined,
   ReloadOutlined,
+  VideoCameraOutlined,
 } from "@ant-design/icons";
+import About from "./About";
 import "./App.css";
 import logo from "./assets/logo.png";
 
@@ -44,11 +43,6 @@ const BROWSER_OPTIONS = [
 ];
 
 const DEFAULT_BROWSER = "chrome";
-
-const AUTHORS = [
-  { name: "@thehappymouse", role: "创意与打磨" },
-  { name: "ChatGPT", role: "CTO" },
-];
 
 const LogoMark = (props) => <img src={logo} alt="yt-dlp-x logo" {...props} />;
 
@@ -464,6 +458,16 @@ function App() {
       theme={{
         token: {
           colorPrimary: "#2563eb",
+          borderRadius: 2,
+          borderRadiusLG: 2,
+          borderRadiusSM: 2,
+          borderRadiusXS: 2,
+          borderRadiusOuter: 2,
+        },
+        components: {
+          Segmented: {
+            controlHeight: 42,
+          },
         },
       }}
     >
@@ -548,9 +552,18 @@ function App() {
                 <Form.Item label="下载类型">
                   <Segmented
                     block
+                    className="download-type-segmented"
                     options={[
-                      { label: "视频 (最佳画质)", value: "video" },
-                      { label: "纯音频 (MP3)", value: "audio" },
+                      {
+                        label: "视频 (最佳画质)",
+                        value: "video",
+                        icon: <VideoCameraOutlined />,
+                      },
+                      {
+                        label: "纯音频 (MP3)",
+                        value: "audio",
+                        icon: <AudioOutlined />,
+                      },
                     ]}
                     value={downloadType}
                     onChange={(value) => setDownloadType(String(value))}
@@ -658,65 +671,7 @@ function App() {
         </div>
       </div>
 
-      <Modal
-        open={isAboutDialogOpen}
-        onCancel={closeAboutDialog}
-        footer={null}
-        centered
-        title={
-          <Space align="center">
-            <LogoMark className="about-logo" />
-
-            <Title level={4} style={{ margin: 0 }}>
-              关于 yt-dlp-x
-            </Title>
-          </Space>
-        }
-      >
-        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-          <Paragraph>
-            yt-dlp-x 基于 Tauri 2 构建，提供直观的界面，让 yt-dlp
-            的强大能力更易于使用，支持音视频分离下载、Cookies 整合等特性。
-          </Paragraph>
-          <Space direction="vertical" size={4}>
-            <Button
-              type="link"
-              href="https://github.com/thehappymouse/yt-dlp-x"
-              target="_blank"
-              rel="noreferrer"
-              icon={<GithubOutlined />}
-            >
-              GitHub (https://github.com/thehappymouse/yt-dlp-x)
-            </Button>
-            <Button
-              type="link"
-              href="mailto:thehappymouse@gmail.com"
-              icon={<MailOutlined />}
-            >
-              thehappymouse@gmail.com
-            </Button>
-          </Space>
-          <div>
-            <Title level={5} style={{ marginBottom: 12 }}>
-              制作团队
-            </Title>
-            <List
-              dataSource={AUTHORS}
-              renderItem={(author) => (
-                <List.Item key={author.name} className="author-item">
-                  <Space direction="vertical" size={0}>
-                    <Text strong>{author.name}</Text>
-                    {author.role ? (
-                      <Text type="secondary">{author.role}</Text>
-                    ) : null}
-                  </Space>
-                </List.Item>
-              )}
-              split={false}
-            />
-          </div>
-        </Space>
-      </Modal>
+      <About open={isAboutDialogOpen} onClose={closeAboutDialog} />
     </ConfigProvider>
   );
 }

@@ -41,7 +41,7 @@ body {
 .log-output {
   margin: 0;
   padding: 16px;
-  border-radius: 12px;
+  border-radius: 2px;
   background: #0f172a;
   color: #f8fafc;
   min-height: 160px;
@@ -55,4 +55,10 @@ body {
 
 .author-item {
   padding: 8px 0;
+}
+
+.download-type-segmented .ant-segmented-item-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }

@@ -68,7 +68,7 @@ fn detect_system_binary() -> Option<PathBuf> {
         }
     }
 
-    None
+    super::path_search::locate_macos_binary(&["yt-dlp", "yt-dlp_macos"])
 }
 
 fn detect_bundled_binary() -> Result<Option<PathBuf>, String> {

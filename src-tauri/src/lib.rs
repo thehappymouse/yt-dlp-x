@@ -162,9 +162,9 @@ async fn download_media(window: Window, request: DownloadRequest) -> Result<Down
         }
     }
 
-    match mode {
+    let ffmpeg_path = match mode {
         DownloadMode::Audio => {
-            ensure_ffmpeg_available()?;
+            let path = ensure_ffmpeg_available()?;
             args.push("-f".into());
             args.push("bestaudio/best".into());
             args.push("-x".into());
@@ -173,13 +173,20 @@ async fn download_media(window: Window, request: DownloadRequest) -> Result<Down
             args.push("--embed-thumbnail".into());
             args.push("--convert-thumbnails".into());
             args.push("jpg".into());
+            Some(path)
         }
         DownloadMode::Video => {
             args.push("-f".into());
             args.push("bv*+ba/b".into());
             args.push("--merge-output-format".into());
             args.push("mp4".into());
+            detect_ffmpeg_path()
         }
+    };
+
+    if let Some(ref path) = ffmpeg_path {
+        args.push("--ffmpeg-location".into());
+        args.push(path_to_string(path));
     }
 
     args.push(url.clone());
@@ -408,12 +415,8 @@ async fn get_default_download_dir() -> Result<String, String> {
     Ok(path_to_string(&yt_dlp::default_download_dir()))
 }
 
-fn ensure_ffmpeg_available() -> Result<(), String> {
-    if detect_ffmpeg_path().is_some() {
-        Ok(())
-    } else {
-        Err("未检测到系统 ffmpeg，请先安装后再试，以便下载音频并嵌入封面。".into())
-    }
+fn ensure_ffmpeg_available() -> Result<PathBuf, String> {
+    detect_ffmpeg_path().ok_or_else(|| "未检测到系统 ffmpeg，请先安装后再试，以便下载音频并嵌入封面。".into())
 }
 
 fn detect_ffmpeg_path() -> Option<PathBuf> {
@@ -428,7 +431,7 @@ fn detect_ffmpeg_path() -> Option<PathBuf> {
         }
     }
 
-    None
+    utils::path_search::locate_macos_binary(&["ffmpeg"])
 }
 
 fn path_to_string(path: &PathBuf) -> String {

@@ -7,7 +7,7 @@ const { Title, Text, Paragraph } = Typography;
 
 const AUTHORS = [
   { name: "@thehappymouse", role: "创意与打磨" },
-  { name: "ChatGPT", role: "CTO" },
+  { name: "www.cto.new", role: "GPT5 Codex" },
 ];
 
 const LogoMark = (props) => <img src={logo} alt="yt-dlp-x logo" {...props} />;
@@ -30,12 +30,12 @@ const About = ({ open, onClose }) => (
   >
     <Space direction="vertical" size="middle" style={{ width: "100%" }}>
       <Paragraph>
+        <Tag color="#108ee9">{APP_VERSION}</Tag>
         yt-dlp-x 基于 Tauri 2 构建，提供直观的界面，让 yt-dlp
         的强大能力更易于使用，支持音视频分离下载、Cookies 整合等特性。
       </Paragraph>
-      <Tag color="geekblue" bordered style={{ alignSelf: "flex-start" }}>
-        {APP_VERSION}
-      </Tag>
+      
+      
       <Space direction="vertical" size={4}>
         <Button
           type="link"

@@ -576,9 +576,7 @@ function App() {
                   <Text type="secondary">
                     基于 Tauri 2 的 yt-dlp 图形界面，支持音视频分离下载。
                   </Text>
-                  <Tag color="geekblue" bordered>
-                    {APP_VERSION}
-                  </Tag>
+                  <Tag color="#108ee9">{APP_VERSION}</Tag>
                   <Button
                     type="default"
                     icon={<InfoCircleOutlined />}
@@ -606,7 +604,11 @@ function App() {
                     <Tag color={statusTagColor} icon={statusTagIcon} bordered>
                       {ytStatusLabel}
                     </Tag>
-                    <Tag color={ffStatusTagColor} icon={ffStatusTagIcon} bordered>
+                    <Tag
+                      color={ffStatusTagColor}
+                      icon={ffStatusTagIcon}
+                      bordered
+                    >
                       {ffStatusLabel}
                     </Tag>
                   </Space>

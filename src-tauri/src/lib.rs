@@ -26,6 +26,13 @@ struct YtDlpStatus {
     source: Option<String>,
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct FfmpegStatus {
+    installed: bool,
+    path: Option<String>,
+}
+
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct DownloadRequest {
@@ -78,6 +85,22 @@ async fn install_yt_dlp() -> Result<YtDlpStatus, String> {
         path: Some(path_to_string(&path)),
         source: Some(source_label(BinarySource::Bundled)),
     })
+}
+
+#[tauri::command]
+async fn check_ffmpeg() -> Result<FfmpegStatus, String> {
+    let status = match detect_ffmpeg_path() {
+        Some(path) => FfmpegStatus {
+            installed: true,
+            path: Some(path_to_string(&path)),
+        },
+        None => FfmpegStatus {
+            installed: false,
+            path: None,
+        },
+    };
+
+    Ok(status)
 }
 
 #[tauri::command]
@@ -386,26 +409,26 @@ async fn get_default_download_dir() -> Result<String, String> {
 }
 
 fn ensure_ffmpeg_available() -> Result<(), String> {
-    if detect_ffmpeg() {
+    if detect_ffmpeg_path().is_some() {
         Ok(())
     } else {
         Err("未检测到系统 ffmpeg，请先安装后再试，以便下载音频并嵌入封面。".into())
     }
 }
 
-fn detect_ffmpeg() -> bool {
-    if which("ffmpeg").is_ok() {
-        return true;
+fn detect_ffmpeg_path() -> Option<PathBuf> {
+    if let Ok(path) = which("ffmpeg") {
+        return Some(path);
     }
 
     #[cfg(target_os = "windows")]
     {
-        if which("ffmpeg.exe").is_ok() {
-            return true;
+        if let Ok(path) = which("ffmpeg.exe") {
+            return Some(path);
         }
     }
 
-    false
+    None
 }
 
 fn path_to_string(path: &PathBuf) -> String {
@@ -425,6 +448,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             check_yt_dlp,
+            check_ffmpeg,
             install_yt_dlp,
             download_media,
             get_default_download_dir

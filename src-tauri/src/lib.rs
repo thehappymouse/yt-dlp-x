@@ -18,8 +18,6 @@ use tokio::{
 use utils::yt_dlp::{self, BinarySource};
 use which::which;
 
-const DEFAULT_COOKIE_BROWSERS: &str = "chrome,edge,firefox,brave";
-
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct YtDlpStatus {
@@ -131,13 +129,14 @@ async fn download_media(window: Window, request: DownloadRequest) -> Result<Down
 
     let is_youtube = url.contains("youtube.com") || url.contains("youtu.be");
     if is_youtube {
-        let browser = browser
+        if let Some(browser) = browser
             .as_deref()
             .map(str::trim)
             .filter(|value| !value.is_empty())
-            .unwrap_or(DEFAULT_COOKIE_BROWSERS);
-        args.push("--cookies-from-browser".into());
-        args.push(browser.to_string());
+        {
+            args.push("--cookies-from-browser".into());
+            args.push(browser.to_string());
+        }
     }
 
     match mode {

@@ -74,6 +74,11 @@ function App() {
     source: "",
   });
   const [checkingYt, setCheckingYt] = useState(true);
+  const [ffStatus, setFfStatus] = useState({
+    installed: false,
+    path: "",
+  });
+  const [checkingFf, setCheckingFf] = useState(true);
   const [installing, setInstalling] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(null);
@@ -92,6 +97,7 @@ function App() {
 
   useEffect(() => {
     refreshYtStatus();
+    refreshFfmpegStatus();
     loadDefaultOutputDir();
   }, []);
 
@@ -256,6 +262,21 @@ function App() {
     }
   };
 
+  const refreshFfmpegStatus = async () => {
+    try {
+      setCheckingFf(true);
+      const status = await invoke("check_ffmpeg");
+      setFfStatus({
+        installed: Boolean(status.installed),
+        path: status.path ?? "",
+      });
+    } catch (err) {
+      setErrorMessage(`检测 ffmpeg 失败：${extractErrorMessage(err)}`);
+    } finally {
+      setCheckingFf(false);
+    }
+  };
+
   const loadDefaultOutputDir = async () => {
     try {
       const dir = await invoke("get_default_download_dir");
@@ -265,6 +286,11 @@ function App() {
     } catch (err) {
       console.warn("获取默认下载目录失败", err);
     }
+  };
+
+  const refreshBinaryStatuses = () => {
+    refreshYtStatus();
+    refreshFfmpegStatus();
   };
 
   const installYtDlp = async () => {
@@ -351,7 +377,7 @@ function App() {
     } finally {
       setIsDownloading(false);
       setDownloadProgress(null);
-      refreshYtStatus();
+      refreshBinaryStatuses();
     }
   };
 
@@ -484,6 +510,38 @@ function App() {
     <ExclamationCircleOutlined />
   );
 
+  const ffStatusLabel = checkingFf
+    ? "正在检测 ffmpeg..."
+    : ffStatus.installed
+    ? "ffmpeg 已就绪"
+    : "尚未检测到 ffmpeg";
+
+  const ffStatusTagColor = checkingFf
+    ? "processing"
+    : ffStatus.installed
+    ? "success"
+    : "warning";
+
+  const ffStatusTagIcon = checkingFf ? (
+    <LoadingOutlined spin />
+  ) : ffStatus.installed ? (
+    <CheckCircleOutlined />
+  ) : (
+    <ExclamationCircleOutlined />
+  );
+
+  const ytStatusHelperText = checkingYt
+    ? "正在检测系统中的 yt-dlp..."
+    : ytStatus.path
+    ? `当前使用的 yt-dlp 路径：${ytStatus.path}`
+    : "将自动在首次下载时获取 yt-dlp。";
+
+  const ffStatusHelperText = checkingFf
+    ? "正在检测系统中的 ffmpeg..."
+    : ffStatus.path
+    ? `检测到的 ffmpeg 路径：${ffStatus.path}`
+    : "未检测到 ffmpeg，请先在系统中安装，以支持音频转换与封面嵌入。";
+
   return (
     <ConfigProvider
       theme={{
@@ -540,14 +598,20 @@ function App() {
                   wrap="wrap"
                   gap="small"
                 >
-                  <Tag color={statusTagColor}  icon={statusTagIcon} bordered>
-                    {ytStatusLabel}
-                  </Tag>
+                  <Space align="center" size="small" wrap>
+                    <Tag color={statusTagColor} icon={statusTagIcon} bordered>
+                      {ytStatusLabel}
+                    </Tag>
+                    <Tag color={ffStatusTagColor} icon={ffStatusTagIcon} bordered>
+                      {ffStatusLabel}
+                    </Tag>
+                  </Space>
                   <Space wrap>
                     <Button
                       icon={<ReloadOutlined />}
-                      onClick={refreshYtStatus}
-                      disabled={checkingYt || isDownloading}
+                      onClick={refreshBinaryStatuses}
+                      disabled={checkingYt || checkingFf || isDownloading}
+                      loading={checkingYt || checkingFf}
                     >
                       重新检测
                     </Button>
@@ -562,11 +626,8 @@ function App() {
                     </Button>
                   </Space>
                 </Flex>
-                <Text type="secondary">
-                  {ytStatus.path
-                    ? `当前使用的 yt-dlp 路径：${ytStatus.path}`
-                    : "将自动在首次下载时获取 yt-dlp。"}
-                </Text>
+                <Text type="secondary">{ytStatusHelperText}</Text>
+                <Text type="secondary">{ffStatusHelperText}</Text>
               </Space>
             </Card>
 

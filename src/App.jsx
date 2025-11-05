@@ -50,9 +50,7 @@ const AUTHORS = [
   { name: "ChatGPT", role: "CTO" },
 ];
 
-const LogoMark = (props) => (
-  <img src={logo} alt="yt-dlp-x logo" {...props} />
-);
+const LogoMark = (props) => <img src={logo} alt="yt-dlp-x logo" {...props} />;
 
 const extractErrorMessage = (error) => {
   if (!error) return "未知错误";
@@ -453,11 +451,13 @@ function App() {
     ? "success"
     : "warning";
 
-  const statusTagIcon = checkingYt
-    ? <LoadingOutlined spin />
-    : ytStatus.installed
-    ? <CheckCircleOutlined />
-    : <ExclamationCircleOutlined />;
+  const statusTagIcon = checkingYt ? (
+    <LoadingOutlined spin />
+  ) : ytStatus.installed ? (
+    <CheckCircleOutlined />
+  ) : (
+    <ExclamationCircleOutlined />
+  );
 
   return (
     <ConfigProvider
@@ -478,28 +478,34 @@ function App() {
                     yt-dlp-x
                   </Title>
                 </Space>
-                <Text type="secondary">
-                  基于 Tauri 2 的 yt-dlp 图形界面，支持音视频分离下载。
-                </Text>
-                <Button
-                  type="default"
-                  icon={<InfoCircleOutlined />}
-                  onClick={openAboutDialog}
-                >
-                  关于
-                </Button>
+                <Space align="center" size="middle" wrap>
+                  <Text type="secondary">
+                    基于 Tauri 2 的 yt-dlp 图形界面，支持音视频分离下载。
+                  </Text>
+                  <Button
+                    type="default"
+                    icon={<InfoCircleOutlined />}
+                    onClick={openAboutDialog}
+                  >
+                    关于
+                  </Button>
+                </Space>
               </Space>
             </Card>
 
             <Card>
-              <Space direction="vertical" size="small" style={{ width: "100%" }}>
+              <Space
+                direction="vertical"
+                size="small"
+                style={{ width: "100%" }}
+              >
                 <Flex
                   align="center"
                   justify="space-between"
                   wrap="wrap"
                   gap="small"
                 >
-                  <Tag color={statusTagColor} icon={statusTagIcon} bordered>
+                  <Tag color={statusTagColor}  icon={statusTagIcon} bordered>
                     {ytStatusLabel}
                   </Tag>
                   <Space wrap>
@@ -560,7 +566,8 @@ function App() {
                     options={BROWSER_OPTIONS}
                   />
                   <Text type="secondary" className="field-helper">
-                    下载 YouTube 视频时，会从所选浏览器读取 cookies（需浏览器已登录）。
+                    下载 YouTube 视频时，会从所选浏览器读取
+                    cookies（需浏览器已登录）。
                   </Text>
                 </Form.Item>
 
@@ -659,20 +666,17 @@ function App() {
         title={
           <Space align="center">
             <LogoMark className="about-logo" />
-            <div>
-              <Title level={4} style={{ margin: 0 }}>
-                关于 yt-dlp-x
-              </Title>
-              <Text type="secondary">
-                下载、转换、管理你的音视频内容。
-              </Text>
-            </div>
+
+            <Title level={4} style={{ margin: 0 }}>
+              关于 yt-dlp-x
+            </Title>
           </Space>
         }
       >
         <Space direction="vertical" size="middle" style={{ width: "100%" }}>
           <Paragraph>
-            yt-dlp-x 基于 Tauri 2 构建，提供直观的界面，让 yt-dlp 的强大能力更易于使用，支持音视频分离下载、Cookies 整合等特性。
+            yt-dlp-x 基于 Tauri 2 构建，提供直观的界面，让 yt-dlp
+            的强大能力更易于使用，支持音视频分离下载、Cookies 整合等特性。
           </Paragraph>
           <Space direction="vertical" size={4}>
             <Button
@@ -728,8 +732,7 @@ const formatPercentText = (value) => {
   }
 
   const floored = Math.floor(clamped * 10) / 10;
-  const hasFraction =
-    Math.abs(floored - Math.trunc(floored)) > Number.EPSILON;
+  const hasFraction = Math.abs(floored - Math.trunc(floored)) > Number.EPSILON;
 
   if (hasFraction) {
     return `${floored.toFixed(1)}%`;

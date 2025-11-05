@@ -30,13 +30,14 @@ const About = ({ open, onClose }) => (
   >
     <Space direction="vertical" size="middle" style={{ width: "100%" }}>
       <Paragraph>
-        yt-dlp-x 基于 Tauri 2 构建，提供直观的界面，让 yt-dlp 的强大能力更易于使用，支持音视频分离下载、Cookies 整合等特性。
+        yt-dlp-x 基于 Tauri 2 构建，提供直观的界面，让 yt-dlp
+        的强大能力更易于使用，支持音视频分离下载、Cookies 整合等特性。
       </Paragraph>
       <Tag color="geekblue" bordered style={{ alignSelf: "flex-start" }}>
         {APP_VERSION}
       </Tag>
       <Space direction="vertical" size={4}>
-
+        <Button
           type="link"
           href="https://github.com/thehappymouse/yt-dlp-x"
           target="_blank"
@@ -63,7 +64,9 @@ const About = ({ open, onClose }) => (
             <List.Item key={author.name} className="author-item">
               <Space direction="vertical" size={0}>
                 <Text strong>{author.name}</Text>
-                {author.role ? <Text type="secondary">{author.role}</Text> : null}
+                {author.role ? (
+                  <Text type="secondary">{author.role}</Text>
+                ) : null}
               </Space>
             </List.Item>
           )}

@@ -30,4 +30,8 @@ $ yarn tauri build
 - `src/` — React 前端界面
 - `src-tauri/` — Tauri 2 Rust 主程序、命令处理与 `yt-dlp` 管理逻辑
 
+## 许可证
+
+本项目使用 [The Unlicense](./LICENSE) 授权，保持与 yt-dlp 相同。
+
 欢迎根据自身需求进一步扩展，例如加入任务队列、批量下载、字幕获取等功能。

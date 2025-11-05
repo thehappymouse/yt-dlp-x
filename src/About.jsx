@@ -1,6 +1,7 @@
-import { Button, List, Modal, Space, Typography } from "antd";
+import { Button, List, Modal, Space, Tag, Typography } from "antd";
 import { GithubOutlined, MailOutlined } from "@ant-design/icons";
 import logo from "./assets/logo.png";
+import { APP_VERSION } from "./version";
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -31,8 +32,11 @@ const About = ({ open, onClose }) => (
       <Paragraph>
         yt-dlp-x 基于 Tauri 2 构建，提供直观的界面，让 yt-dlp 的强大能力更易于使用，支持音视频分离下载、Cookies 整合等特性。
       </Paragraph>
+      <Tag color="geekblue" bordered style={{ alignSelf: "flex-start" }}>
+        {APP_VERSION}
+      </Tag>
       <Space direction="vertical" size={4}>
-        <Button
+
           type="link"
           href="https://github.com/thehappymouse/yt-dlp-x"
           target="_blank"

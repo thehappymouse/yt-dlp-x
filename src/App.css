@@ -44,6 +44,16 @@ header p {
   color: #4b5563;
 }
 
+.header-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.header-actions .about-button {
+  min-width: 120px;
+}
+
 .card {
   background: #ffffff;
   border-radius: 20px;
@@ -52,6 +62,51 @@ header p {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.about-card {
+  gap: 18px;
+}
+
+.about-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.about-description {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #4b5563;
+}
+
+.author-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.author-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.author-name {
+  font-weight: 600;
+  color: #111827;
+}
+
+.author-role {
+  font-size: 0.9rem;
+  color: #2563eb;
 }
 
 .status-row {
@@ -229,13 +284,18 @@ button[disabled] {
   align-items: stretch;
   gap: 10px;
   width: 100%;
-  max-width: 320px;
+}
+
+.form-actions .action-wrapper > .primary {
+  align-self: flex-end;
+  width: auto;
 }
 
 .download-progress {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  width: 100%;
 }
 
 .download-progress-track {
@@ -422,6 +482,22 @@ button[disabled] {
 
   .field-helper {
     color: #94a3b8;
+  }
+
+  .about-description {
+    color: #cbd5f5;
+  }
+
+  .author-item {
+    background: rgba(37, 99, 235, 0.18);
+  }
+
+  .author-name {
+    color: #f8fafc;
+  }
+
+  .author-role {
+    color: #93c5fd;
   }
 
   button.outline {

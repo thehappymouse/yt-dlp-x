@@ -5,7 +5,6 @@ import { openPath } from "@tauri-apps/plugin-opener";
 import "./App.css";
 
 const BROWSER_OPTIONS = [
-  { label: "自动选择 (Chrome / Edge / Firefox / Brave)", value: "chrome,edge,firefox,brave" },
   { label: "Chrome", value: "chrome" },
   { label: "Edge", value: "edge" },
   { label: "Firefox", value: "firefox" },
@@ -13,7 +12,12 @@ const BROWSER_OPTIONS = [
   { label: "Safari (macOS)", value: "safari" },
 ];
 
-const DEFAULT_BROWSER = BROWSER_OPTIONS[0].value;
+const DEFAULT_BROWSER = "chrome";
+
+const AUTHORS = [
+  { name: "yt-dlp-x 团队", role: "开发与维护" },
+  { name: "ChatGPT", role: "CTO" },
+];
 
 const extractErrorMessage = (error) => {
   if (!error) return "未知错误";
@@ -45,6 +49,7 @@ function App() {
   const [logOutput, setLogOutput] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [isAboutOpen, setIsAboutOpen] = useState(false);
 
   const activeSessionIdRef = useRef(null);
   const hasRealtimeLogsRef = useRef(false);
@@ -377,7 +382,36 @@ function App() {
       <header>
         <h1>yt-dlp-x</h1>
         <p>基于 Tauri 2 的 yt-dlp 图形界面，支持音视频分离下载。</p>
+        <div className="header-actions">
+          <button
+            type="button"
+            className="outline about-button"
+            onClick={() => setIsAboutOpen((prev) => !prev)}
+          >
+            {isAboutOpen ? "收起关于" : "关于"}
+          </button>
+        </div>
       </header>
+
+      {isAboutOpen && (
+        <section className="card about-card">
+          <div className="about-header">
+            <h2>关于</h2>
+            <button type="button" className="outline" onClick={() => setIsAboutOpen(false)}>
+              关闭
+            </button>
+          </div>
+          <p className="about-description">yt-dlp-x 由以下作者共同维护：</p>
+          <ul className="author-list">
+            {AUTHORS.map((author) => (
+              <li key={author.name} className="author-item">
+                <span className="author-name">{author.name}</span>
+                {author.role ? <span className="author-role">{author.role}</span> : null}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="card status-card">
         <div className="status-row">
@@ -464,7 +498,7 @@ function App() {
             ))}
           </select>
           <span className="field-helper">
-            下载 YouTube 视频时，会尝试自动从所选浏览器读取 cookies（需浏览器已登录）。
+            下载 YouTube 视频时，会从所选浏览器读取 cookies（需浏览器已登录）。
           </span>
         </div>
 
@@ -492,7 +526,7 @@ function App() {
 
         {isYoutubeUrl && (
           <div className="alert info">
-            已检测到 YouTube 链接，将按所选浏览器自动附加 cookies。
+            已检测到 YouTube 链接，将使用所选浏览器的 cookies。
           </div>
         )}
 

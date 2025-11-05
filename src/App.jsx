@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useId } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { openPath } from "@tauri-apps/plugin-opener";
@@ -18,6 +18,54 @@ const AUTHORS = [
   { name: "yt-dlp-x 团队", role: "开发与维护" },
   { name: "ChatGPT", role: "CTO" },
 ];
+
+const LogoMark = (props) => {
+  const idBase = useId().replace(/:/g, "");
+  const gradientId = `${idBase}-gradient`;
+  const accentId = `${idBase}-accent`;
+  const arrowId = `${idBase}-arrow`;
+
+  return (
+    <svg viewBox="0 0 64 64" role="img" aria-hidden="true" focusable="false" {...props}>
+      <defs>
+        <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#60a5fa" />
+          <stop offset="55%" stopColor="#2563eb" />
+          <stop offset="100%" stopColor="#1d4ed8" />
+        </linearGradient>
+        <linearGradient id={accentId} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#38bdf8" />
+          <stop offset="100%" stopColor="#2563eb" />
+        </linearGradient>
+        <linearGradient id={arrowId} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" />
+          <stop offset="100%" stopColor="#dbeafe" stopOpacity="0.8" />
+        </linearGradient>
+      </defs>
+      <rect x="4" y="4" width="56" height="56" rx="16" fill={`url(#${gradientId})`} />
+      <path
+        d="M14 24c0-5.523 4.477-10 10-10h9a6 6 0 016 6v4.8c0 2.209 1.791 4 4 4h7.6c3.315 0 6 2.685 6 6V44c0 5.523-4.477 10-10 10H24c-5.523 0-10-4.477-10-10z"
+        fill={`url(#${accentId})`}
+        opacity="0.4"
+      />
+      <rect x="36" y="14" width="18" height="12" rx="5" fill="#ef4444" />
+      <polygon points="44 24 44 16 50 20" fill="#ffffff" />
+      <path
+        d="M32 16a2 2 0 00-2 2v16.17l-4.59-4.58a2 2 0 10-2.83 2.83l8.49 8.48a2 2 0 002.83 0l8.49-8.48a2 2 0 10-2.83-2.83L34 34.17V18a2 2 0 00-2-2z"
+        fill={`url(#${arrowId})`}
+      />
+      <rect x="26" y="44" width="12" height="4" rx="2" fill="#e2e8f0" opacity="0.85" />
+      <path
+        d="M18 40l10 10M28 40l-10 10"
+        stroke="#bfdbfe"
+        strokeWidth="4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity="0.9"
+      />
+    </svg>
+  );
+};
 
 const extractErrorMessage = (error) => {
   if (!error) return "未知错误";
@@ -49,7 +97,10 @@ function App() {
   const [logOutput, setLogOutput] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [isAboutOpen, setIsAboutOpen] = useState(false);
+  const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
+
+  const closeAboutDialog = () => setIsAboutDialogOpen(false);
+  const openAboutDialog = () => setIsAboutDialogOpen(true);
 
   const activeSessionIdRef = useRef(null);
   const hasRealtimeLogsRef = useRef(false);
@@ -58,6 +109,34 @@ function App() {
     refreshYtStatus();
     loadDefaultOutputDir();
   }, []);
+
+  useEffect(() => {
+    if (!isAboutDialogOpen) {
+      return undefined;
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setIsAboutDialogOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    const body = typeof document !== "undefined" ? document.body : null;
+    const originalOverflow = body ? body.style.overflow : null;
+    if (body) {
+      body.style.overflow = "hidden";
+    }
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      if (body) {
+        body.style.overflow = originalOverflow ?? "";
+      }
+    };
+  }, [isAboutDialogOpen]);
 
   const formatPercentText = (value) => {
     if (typeof value !== "number" || !Number.isFinite(value)) {
@@ -380,37 +459,75 @@ function App() {
   return (
     <div className="app-container">
       <header>
-        <h1>yt-dlp-x</h1>
-        <p>基于 Tauri 2 的 yt-dlp 图形界面，支持音视频分离下载。</p>
-        <div className="header-actions">
+        <div className="header-title">
+          <LogoMark className="app-logo-mark" />
+          <h1>yt-dlp-x</h1>
+        </div>
+        <div className="header-subtitle">
+          <p>基于 Tauri 2 的 yt-dlp 图形界面，支持音视频分离下载。</p>
           <button
             type="button"
-            className="outline about-button"
-            onClick={() => setIsAboutOpen((prev) => !prev)}
+            className="outline small about-button"
+            onClick={openAboutDialog}
+            aria-haspopup="dialog"
+            aria-expanded={isAboutDialogOpen}
+            aria-controls={isAboutDialogOpen ? "about-dialog" : undefined}
           >
-            {isAboutOpen ? "收起关于" : "关于"}
+            <span className="about-icon" aria-hidden="true">
+              !
+            </span>
+            <span>关于</span>
           </button>
         </div>
       </header>
 
-      {isAboutOpen && (
-        <section className="card about-card">
-          <div className="about-header">
-            <h2>关于</h2>
-            <button type="button" className="outline" onClick={() => setIsAboutOpen(false)}>
-              关闭
-            </button>
+      {isAboutDialogOpen && (
+        <div className="dialog-backdrop" role="presentation" onClick={closeAboutDialog}>
+          <div
+            id="about-dialog"
+            className="dialog-card about-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="about-dialog-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="dialog-header">
+              <div className="dialog-title">
+                <LogoMark className="dialog-logo" />
+                <div>
+                  <h2 id="about-dialog-title">关于 yt-dlp-x</h2>
+                  <p className="dialog-subtitle">下载、转换、管理你的音视频内容。</p>
+                </div>
+              </div>
+              <button type="button" className="dialog-close" aria-label="关闭" onClick={closeAboutDialog}>
+                ×
+              </button>
+            </div>
+            <div className="dialog-body">
+              <p>
+                yt-dlp-x 基于 Tauri 2 构建，提供直观的界面，让 yt-dlp 的强大能力更易于使用，
+                支持音视频分离下载、Cookies 整合等特性。
+              </p>
+              <div className="dialog-links">
+                <a href="https://github.com/thehappymouse/yt-dlp-x" target="_blank" rel="noreferrer">
+                  GitHub 仓库
+                </a>
+                <a href="mailto:thehappymouse@gmail.com">thehappymouse@gmail.com</a>
+              </div>
+              <div className="dialog-section">
+                <h3>制作团队</h3>
+                <ul className="author-list">
+                  {AUTHORS.map((author) => (
+                    <li key={author.name} className="author-item">
+                      <span className="author-name">{author.name}</span>
+                      {author.role ? <span className="author-role">{author.role}</span> : null}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           </div>
-          <p className="about-description">yt-dlp-x 由以下作者共同维护：</p>
-          <ul className="author-list">
-            {AUTHORS.map((author) => (
-              <li key={author.name} className="author-item">
-                <span className="author-name">{author.name}</span>
-                {author.role ? <span className="author-role">{author.role}</span> : null}
-              </li>
-            ))}
-          </ul>
-        </section>
+        </div>
       )}
 
       <section className="card status-card">

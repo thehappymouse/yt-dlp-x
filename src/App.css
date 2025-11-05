@@ -44,14 +44,58 @@ header p {
   color: #4b5563;
 }
 
-.header-actions {
+.header-title {
   display: flex;
+  align-items: center;
   justify-content: center;
-  margin-top: 4px;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
-.header-actions .about-button {
-  min-width: 120px;
+.app-logo-mark {
+  width: 68px;
+  height: 68px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 22px 38px rgba(37, 99, 235, 0.28));
+}
+
+.header-subtitle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.header-subtitle p {
+  margin: 0;
+}
+
+button.small {
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.about-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.about-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  box-shadow: 0 6px 14px rgba(239, 68, 68, 0.35);
 }
 
 .card {
@@ -64,22 +108,6 @@ header p {
   gap: 16px;
 }
 
-.about-card {
-  gap: 18px;
-}
-
-.about-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.about-description {
-  margin: 0;
-  font-size: 0.95rem;
-  color: #4b5563;
-}
 
 .author-list {
   list-style: none;
@@ -107,6 +135,118 @@ header p {
 .author-role {
   font-size: 0.9rem;
   color: #2563eb;
+}
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 1000;
+  backdrop-filter: blur(3px);
+  overflow-y: auto;
+}
+
+.dialog-card {
+  background: #ffffff;
+  border-radius: 24px;
+  width: min(520px, 100%);
+  padding: 32px;
+  box-shadow: 0 32px 60px rgba(15, 23, 42, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-height: min(90vh, 620px);
+  overflow-y: auto;
+}
+
+.about-dialog .dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dialog-title {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.dialog-logo {
+  width: 54px;
+  height: 54px;
+  flex-shrink: 0;
+}
+
+.dialog-subtitle {
+  margin: 4px 0 0;
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+
+.dialog-body p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #374151;
+  line-height: 1.6;
+}
+
+.dialog-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dialog-links a {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.2s ease;
+}
+
+.dialog-links a:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.dialog-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dialog-section h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+button.dialog-close {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: rgba(37, 99, 235, 0.12);
+  color: #1d4ed8;
+  font-size: 1.25rem;
+  line-height: 1;
+  border-radius: 14px;
+}
+
+button.dialog-close:hover:not(:disabled) {
+  background: rgba(37, 99, 235, 0.18);
 }
 
 .status-row {
@@ -374,6 +514,40 @@ button[disabled] {
     padding: 32px 16px 56px;
   }
 
+  .header-title {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .app-logo-mark {
+    width: 60px;
+    height: 60px;
+  }
+
+  .header-subtitle {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .header-subtitle p {
+    text-align: center;
+  }
+
+  .dialog-card {
+    width: min(480px, 100%);
+    padding: 26px;
+  }
+
+  .dialog-logo {
+    width: 48px;
+    height: 48px;
+  }
+
+  button.dialog-close {
+    width: 36px;
+    height: 36px;
+  }
+
   .status-row {
     flex-direction: column;
     align-items: stretch;
@@ -484,8 +658,43 @@ button[disabled] {
     color: #94a3b8;
   }
 
-  .about-description {
+  .dialog-card {
+    background: rgba(15, 23, 42, 0.92);
+    box-shadow: 0 42px 80px rgba(2, 6, 23, 0.7);
+  }
+
+  .dialog-subtitle {
     color: #cbd5f5;
+  }
+
+  .dialog-body p {
+    color: #e2e8f0;
+  }
+
+  .dialog-links a {
+    color: #bfdbfe;
+  }
+
+  .dialog-links a:hover {
+    color: #93c5fd;
+  }
+
+  .dialog-section h3 {
+    color: #f8fafc;
+  }
+
+  button.dialog-close {
+    background: rgba(148, 163, 184, 0.24);
+    color: #cbd5f5;
+  }
+
+  button.dialog-close:hover:not(:disabled) {
+    background: rgba(148, 163, 184, 0.32);
+  }
+
+  .about-icon {
+    background: #f97316;
+    box-shadow: 0 6px 14px rgba(249, 115, 22, 0.35);
   }
 
   .author-item {

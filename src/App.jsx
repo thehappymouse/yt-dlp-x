@@ -87,6 +87,8 @@ function App() {
 
   const activeSessionIdRef = useRef(null);
   const hasRealtimeLogsRef = useRef(false);
+  const logContainerRef = useRef(null);
+  const [isLogAutoScrollEnabled, setIsLogAutoScrollEnabled] = useState(true);
 
   useEffect(() => {
     refreshYtStatus();
@@ -225,6 +227,19 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!isLogAutoScrollEnabled) {
+      return;
+    }
+
+    const container = logContainerRef.current;
+    if (!container) {
+      return;
+    }
+
+    container.scrollTop = container.scrollHeight;
+  }, [logOutput, isLogAutoScrollEnabled]);
+
   const refreshYtStatus = async () => {
     try {
       setCheckingYt(true);
@@ -355,6 +370,22 @@ function App() {
 
   const clearLog = () => {
     setLogOutput("");
+  };
+
+  const handleLogScroll = (event) => {
+    const target = event.currentTarget;
+    if (!target) {
+      return;
+    }
+
+    const threshold = 12;
+    const distanceToBottom =
+      target.scrollHeight - target.scrollTop - target.clientHeight;
+    const isAtBottom = distanceToBottom <= threshold;
+
+    setIsLogAutoScrollEnabled((prev) =>
+      prev === isAtBottom ? prev : isAtBottom
+    );
   };
 
   const isYoutubeUrl = useMemo(() => {
@@ -663,7 +694,11 @@ function App() {
                 </Button>
               }
             >
-              <Paragraph className="log-output">
+              <Paragraph
+                className="log-output"
+                ref={logContainerRef}
+                onScroll={handleLogScroll}
+              >
                 {logOutput || "暂无输出"}
               </Paragraph>
             </Card>

@@ -223,6 +223,42 @@ button[disabled] {
   justify-content: flex-end;
 }
 
+.form-actions .action-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.download-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.download-progress-track {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.35);
+  overflow: hidden;
+}
+
+.download-progress-bar {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #93c5fd 0%, #3b82f6 55%, #2563eb 100%);
+  transition: width 0.25s ease;
+}
+
+.download-progress-text {
+  font-size: 0.85rem;
+  color: #4b5563;
+  font-weight: 500;
+  text-align: right;
+}
+
 .alert {
   padding: 14px 16px;
   border-radius: 14px;
@@ -307,6 +343,10 @@ button[disabled] {
 
   .form-actions {
     justify-content: stretch;
+  }
+
+  .form-actions .action-wrapper {
+    max-width: none;
   }
 
   .form-actions button {
@@ -402,6 +442,18 @@ button[disabled] {
 
   .mode-toggle button.active {
     background: #2563eb;
+  }
+
+  .download-progress-track {
+    background: rgba(148, 163, 184, 0.28);
+  }
+
+  .download-progress-bar {
+    background: linear-gradient(90deg, #60a5fa 0%, #3b82f6 60%, #2563eb 100%);
+  }
+
+  .download-progress-text {
+    color: #cbd5f5;
   }
 
   .alert.error {

@@ -120,7 +120,6 @@ async fn download_media(window: Window, request: DownloadRequest) -> Result<Down
 
     let mut args: Vec<String> = vec![
         "--newline".into(),
-        "--no-progress".into(),
         "--no-playlist".into(),
         "--continue".into(),
         "--no-mtime".into(),
@@ -239,6 +238,89 @@ async fn download_media(window: Window, request: DownloadRequest) -> Result<Down
     })
 }
 
+struct ProgressInfo {
+    percent: f64,
+    percent_str: String,
+    eta: Option<String>,
+    speed: Option<String>,
+    total: Option<String>,
+    status: Option<String>,
+    raw: String,
+}
+
+fn parse_progress_line(line: &str) -> Option<ProgressInfo> {
+    if !line.starts_with("[download]") {
+        return None;
+    }
+
+    let trimmed = line.trim_start_matches("[download]").trim();
+    let (percent_part, rest_part) = trimmed.split_once('%')?;
+    let percent_str = percent_part.trim();
+    if percent_str.is_empty() {
+        return None;
+    }
+
+    let percent_value = percent_str.parse::<f64>().ok()?;
+    let percent_display = format!("{percent_str}%");
+    let rest = rest_part.trim();
+
+    let mut eta = None;
+
+    if let Some(index) = rest.rfind("ETA ") {
+        let value = rest[index + 4..].trim();
+        if !value.is_empty() {
+            eta = Some(value.to_string());
+        }
+    } else if let Some(index) = rest.rfind(" in ") {
+        let value = rest[index + 4..].trim();
+        if !value.is_empty() {
+            eta = Some(value.to_string());
+        }
+    }
+
+    let mut speed = None;
+    if let Some(index) = rest.find(" at ") {
+        let after = &rest[index + 4..];
+        if let Some(token) = after.split_whitespace().next() {
+            let cleaned = token.trim().trim_end_matches(',');
+            if !cleaned.is_empty() {
+                speed = Some(cleaned.to_string());
+            }
+        }
+    }
+
+    let mut total = None;
+    if let Some(after_of) = rest.trim_start().strip_prefix("of ") {
+        let mut end_index = after_of.len();
+        for marker in [" at ", " ETA ", " in "] {
+            if let Some(idx) = after_of.find(marker) {
+                end_index = end_index.min(idx);
+            }
+        }
+        let candidate = after_of[..end_index].trim().trim_end_matches(',');
+        if !candidate.is_empty() {
+            total = Some(candidate.to_string());
+        }
+    }
+
+    let mut status = None;
+    if rest.contains(" in ") || percent_value >= 100.0 {
+        status = Some("finished".to_string());
+    } else if rest.contains("ETA") || !rest.is_empty() {
+        status = Some("downloading".to_string());
+    }
+
+    Some(ProgressInfo {
+        percent: percent_value,
+        percent_str: percent_display,
+        eta,
+        speed,
+        total,
+        status,
+        raw: trimmed.to_string(),
+    })
+}
+
 async fn forward_stream<R>(
     reader: R,
     window: Window,
@@ -265,6 +347,34 @@ where
             }),
         ) {
             eprintln!("Failed to emit log event: {err}");
+        }
+
+        if let Some(progress) = parse_progress_line(&line) {
+            let ProgressInfo {
+                percent,
+                percent_str,
+                eta,
+                speed,
+                total,
+                status,
+                raw,
+            } = progress;
+
+            if let Err(err) = window.emit(
+                "download-progress",
+                json!({
+                    "sessionId": session_id.as_ref(),
+                    "percent": percent,
+                    "percentText": percent_str,
+                    "eta": eta,
+                    "speed": speed,
+                    "total": total,
+                    "status": status,
+                    "raw": raw,
+                }),
+            ) {
+                eprintln!("Failed to emit progress event: {err}");
+            }
         }
     }
 

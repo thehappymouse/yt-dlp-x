@@ -1,9 +1,39 @@
-import { useEffect, useMemo, useRef, useState, useId } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { openPath } from "@tauri-apps/plugin-opener";
+import {
+  Alert,
+  Button,
+  Card,
+  ConfigProvider,
+  Flex,
+  Form,
+  Input,
+  List,
+  Modal,
+  Progress,
+  Select,
+  Segmented,
+  Space,
+  Tag,
+  Typography,
+} from "antd";
+import {
+  CheckCircleOutlined,
+  DownloadOutlined,
+  ExclamationCircleOutlined,
+  FolderOpenOutlined,
+  GithubOutlined,
+  InfoCircleOutlined,
+  LoadingOutlined,
+  MailOutlined,
+  ReloadOutlined,
+} from "@ant-design/icons";
 import "./App.css";
-import logo from "./assets/logo.png"; // ✅ 关键
+import logo from "./assets/logo.png";
+
+const { Title, Text, Paragraph } = Typography;
 
 const BROWSER_OPTIONS = [
   { label: "Chrome", value: "chrome" },
@@ -20,9 +50,9 @@ const AUTHORS = [
   { name: "ChatGPT", role: "CTO" },
 ];
 
-const LogoMark = (props) => {
-  return <img src={logo} {...props}></img>;
-};
+const LogoMark = (props) => (
+  <img src={logo} alt="yt-dlp-x logo" {...props} />
+);
 
 const extractErrorMessage = (error) => {
   if (!error) return "未知错误";
@@ -70,55 +100,6 @@ function App() {
     refreshYtStatus();
     loadDefaultOutputDir();
   }, []);
-
-  useEffect(() => {
-    if (!isAboutDialogOpen) {
-      return undefined;
-    }
-
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        setIsAboutDialogOpen(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    const body = typeof document !== "undefined" ? document.body : null;
-    const originalOverflow = body ? body.style.overflow : null;
-    if (body) {
-      body.style.overflow = "hidden";
-    }
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      if (body) {
-        body.style.overflow = originalOverflow ?? "";
-      }
-    };
-  }, [isAboutDialogOpen]);
-
-  const formatPercentText = (value) => {
-    if (typeof value !== "number" || !Number.isFinite(value)) {
-      return null;
-    }
-
-    const clamped = Math.min(100, Math.max(0, value));
-    if (clamped === 100) {
-      return "100%";
-    }
-
-    const floored = Math.floor(clamped * 10) / 10;
-    const hasFraction =
-      Math.abs(floored - Math.trunc(floored)) > Number.EPSILON;
-
-    if (hasFraction) {
-      return `${floored.toFixed(1)}%`;
-    }
-
-    return `${Math.trunc(floored)}%`;
-  };
 
   useEffect(() => {
     let unlistenLog;
@@ -458,8 +439,6 @@ function App() {
     return "准备中...";
   }, [downloadProgress]);
 
-  const progressBarWidth = progressPercent ?? (downloadProgress ? 5 : 0);
-
   const ytStatusLabel = checkingYt
     ? "正在检测 yt-dlp..."
     : ytStatus.installed
@@ -468,269 +447,295 @@ function App() {
       }）`
     : "尚未检测到 yt-dlp";
 
+  const statusTagColor = checkingYt
+    ? "processing"
+    : ytStatus.installed
+    ? "success"
+    : "warning";
+
+  const statusTagIcon = checkingYt
+    ? <LoadingOutlined spin />
+    : ytStatus.installed
+    ? <CheckCircleOutlined />
+    : <ExclamationCircleOutlined />;
+
   return (
-    <div className="app-container">
-      <header>
-        <div className="header-title">
-          <LogoMark className="app-logo-mark" />
-          <h1>yt-dlp-x</h1>
-        </div>
-        <div className="header-subtitle">
-          <p>基于 Tauri 2 的 yt-dlp 图形界面，支持音视频分离下载。</p>
-          <button
-            type="button"
-            className="outline small about-button"
-            onClick={openAboutDialog}
-            aria-haspopup="dialog"
-            aria-expanded={isAboutDialogOpen}
-            aria-controls={isAboutDialogOpen ? "about-dialog" : undefined}
-          >
-            <span className="about-icon" aria-hidden="true">
-              !
-            </span>
-            <span>关于</span>
-          </button>
-        </div>
-      </header>
-
-      {isAboutDialogOpen && (
-        <div
-          className="dialog-backdrop"
-          role="presentation"
-          onClick={closeAboutDialog}
-        >
-          <div
-            id="about-dialog"
-            className="dialog-card about-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="about-dialog-title"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="dialog-header">
-              <div className="dialog-title">
-                <LogoMark className="dialog-logo" />
-                <div>
-                  <h2 id="about-dialog-title">关于 yt-dlp-x</h2>
-                  <p className="dialog-subtitle">
-                    下载、转换、管理你的音视频内容。
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                className="dialog-close"
-                aria-label="关闭"
-                onClick={closeAboutDialog}
-              >
-                ×
-              </button>
-            </div>
-            <div className="dialog-body">
-              <p>
-                yt-dlp-x 基于 Tauri 2 构建，提供直观的界面，让 yt-dlp
-                的强大能力更易于使用， 支持音视频分离下载、Cookies 整合等特性。
-              </p>
-              <div className="dialog-links">
-                <a
-                  href="https://github.com/thehappymouse/yt-dlp-x"
-                  target="_blank"
-                  rel="noreferrer"
+    <ConfigProvider
+      theme={{
+        token: {
+          colorPrimary: "#2563eb",
+        },
+      }}
+    >
+      <div className="app-background">
+        <div className="app-shell">
+          <Space direction="vertical" size="large" style={{ width: "100%" }}>
+            <Card bordered={false} className="hero-card">
+              <Space direction="vertical" size="middle" align="center">
+                <Space align="center" size="middle" wrap>
+                  <LogoMark className="app-logo" />
+                  <Title level={2} style={{ margin: 0 }}>
+                    yt-dlp-x
+                  </Title>
+                </Space>
+                <Text type="secondary">
+                  基于 Tauri 2 的 yt-dlp 图形界面，支持音视频分离下载。
+                </Text>
+                <Button
+                  type="default"
+                  icon={<InfoCircleOutlined />}
+                  onClick={openAboutDialog}
                 >
-                  GitHub (https://github.com/thehappymouse/yt-dlp-x)
-                </a>
-                <a href="mailto:thehappymouse@gmail.com">
-                  thehappymouse@gmail.com
-                </a>
-              </div>
-              <div className="dialog-section">
-                <h3>制作团队</h3>
-                <ul className="author-list">
-                  {AUTHORS.map((author) => (
-                    <li key={author.name} className="author-item">
-                      <span className="author-name">{author.name}</span>
-                      {author.role ? (
-                        <span className="author-role">{author.role}</span>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+                  关于
+                </Button>
+              </Space>
+            </Card>
 
-      <section className="card status-card">
-        <div className="status-row">
-          <div
-            className={[
-              "status-pill",
-              checkingYt
-                ? "loading"
-                : ytStatus.installed
-                ? "success"
-                : "warning",
-            ].join(" ")}
-          >
-            {ytStatusLabel}
-          </div>
-          <div className="status-actions">
-            <button
-              type="button"
-              className="outline"
-              onClick={refreshYtStatus}
-              disabled={checkingYt || isDownloading}
-            >
-              重新检测
-            </button>
-            <button
-              type="button"
-              className="outline"
-              onClick={installYtDlp}
-              disabled={installing}
-            >
-              {installing ? "正在安装..." : "安装 / 更新 yt-dlp"}
-            </button>
-          </div>
-        </div>
-        {ytStatus.path ? (
-          <p className="status-path">当前使用的 yt-dlp 路径：{ytStatus.path}</p>
-        ) : (
-          <p className="status-path">将自动在首次下载时获取 yt-dlp。</p>
-        )}
-      </section>
+            <Card>
+              <Space direction="vertical" size="small" style={{ width: "100%" }}>
+                <Flex
+                  align="center"
+                  justify="space-between"
+                  wrap="wrap"
+                  gap="small"
+                >
+                  <Tag color={statusTagColor} icon={statusTagIcon} bordered>
+                    {ytStatusLabel}
+                  </Tag>
+                  <Space wrap>
+                    <Button
+                      icon={<ReloadOutlined />}
+                      onClick={refreshYtStatus}
+                      disabled={checkingYt || isDownloading}
+                    >
+                      重新检测
+                    </Button>
+                    <Button
+                      type="primary"
+                      ghost
+                      icon={<DownloadOutlined />}
+                      onClick={installYtDlp}
+                      loading={installing}
+                    >
+                      安装 / 更新 yt-dlp
+                    </Button>
+                  </Space>
+                </Flex>
+                <Text type="secondary">
+                  {ytStatus.path
+                    ? `当前使用的 yt-dlp 路径：${ytStatus.path}`
+                    : "将自动在首次下载时获取 yt-dlp。"}
+                </Text>
+              </Space>
+            </Card>
 
-      <form className="card download-card" onSubmit={handleDownload}>
-        <div className="form-group">
-          <label htmlFor="url">视频链接</label>
-          <input
-            id="url"
-            type="text"
-            placeholder="粘贴 YouTube 或其它站点的链接"
-            value={url}
-            onChange={(event) => setUrl(event.target.value)}
-          />
-        </div>
-
-        <div className="form-group">
-          <label>下载类型</label>
-          <div className="mode-toggle">
-            <button
-              type="button"
-              className={downloadType === "video" ? "active" : ""}
-              onClick={() => setDownloadType("video")}
-              disabled={isDownloading}
-            >
-              视频 (最佳画质)
-            </button>
-            <button
-              type="button"
-              className={downloadType === "audio" ? "active" : ""}
-              onClick={() => setDownloadType("audio")}
-              disabled={isDownloading}
-            >
-              纯音频 (MP3)
-            </button>
-          </div>
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="browser">YouTube Cookies 浏览器</label>
-          <select
-            id="browser"
-            value={browser}
-            onChange={(event) => setBrowser(event.target.value)}
-            disabled={isDownloading}
-          >
-            {BROWSER_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <span className="field-helper">
-            下载 YouTube 视频时，会从所选浏览器读取 cookies（需浏览器已登录）。
-          </span>
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="outputDir">保存位置</label>
-          <div className="output-row">
-            <input
-              id="outputDir"
-              type="text"
-              value={outputDir}
-              onChange={(event) => setOutputDir(event.target.value)}
-              placeholder="下载保存目录"
-            />
-            <button
-              type="button"
-              className="outline"
-              onClick={handleOpenDir}
-              disabled={!outputDir.trim()}
-            >
-              打开
-            </button>
-          </div>
-          <span className="field-helper">
-            默认使用系统的下载目录，你可以自行修改。
-          </span>
-        </div>
-
-        {isYoutubeUrl && (
-          <div className="alert info">
-            已检测到 YouTube 链接，将使用所选浏览器的 cookies。
-          </div>
-        )}
-
-        {errorMessage && <div className="alert error">{errorMessage}</div>}
-        {successMessage && (
-          <div className="alert success">{successMessage}</div>
-        )}
-
-        <div className="form-actions">
-          <div className="action-wrapper">
-            <button
-              type="submit"
-              className="primary"
-              disabled={isDownloading || !url.trim()}
-            >
-              {downloadButtonLabel}
-            </button>
-            {isDownloading && (
-              <div className="download-progress">
-                <div className="download-progress-track">
-                  <div
-                    className="download-progress-bar"
-                    style={{
-                      width: `${Math.max(0, Math.min(100, progressBarWidth))}%`,
-                    }}
+            <Card>
+              <Form layout="vertical" onSubmitCapture={handleDownload}>
+                <Form.Item label="视频链接" required>
+                  <Input
+                    value={url}
+                    onChange={(event) => setUrl(event.target.value)}
+                    placeholder="粘贴 YouTube 或其它站点的链接"
                   />
-                </div>
-                <div className="download-progress-text">{progressText}</div>
-              </div>
-            )}
-          </div>
-        </div>
-      </form>
+                </Form.Item>
 
-      <section className="card log-card">
-        <div className="log-header">
-          <h2>日志输出</h2>
-          <button
-            type="button"
-            className="outline"
-            onClick={clearLog}
-            disabled={!logOutput}
-          >
-            清空
-          </button>
+                <Form.Item label="下载类型">
+                  <Segmented
+                    block
+                    options={[
+                      { label: "视频 (最佳画质)", value: "video" },
+                      { label: "纯音频 (MP3)", value: "audio" },
+                    ]}
+                    value={downloadType}
+                    onChange={(value) => setDownloadType(String(value))}
+                    disabled={isDownloading}
+                  />
+                </Form.Item>
+
+                <Form.Item label="YouTube Cookies 浏览器">
+                  <Select
+                    value={browser}
+                    onChange={(value) => setBrowser(value)}
+                    disabled={isDownloading}
+                    options={BROWSER_OPTIONS}
+                  />
+                  <Text type="secondary" className="field-helper">
+                    下载 YouTube 视频时，会从所选浏览器读取 cookies（需浏览器已登录）。
+                  </Text>
+                </Form.Item>
+
+                <Form.Item label="保存位置">
+                  <Space.Compact style={{ width: "100%" }}>
+                    <Input
+                      value={outputDir}
+                      onChange={(event) => setOutputDir(event.target.value)}
+                      placeholder="下载保存目录"
+                    />
+                    <Button
+                      icon={<FolderOpenOutlined />}
+                      onClick={handleOpenDir}
+                      disabled={!outputDir.trim()}
+                    >
+                      打开
+                    </Button>
+                  </Space.Compact>
+                  <Text type="secondary" className="field-helper">
+                    默认使用系统的下载目录，你可以自行修改。
+                  </Text>
+                </Form.Item>
+
+                {(isYoutubeUrl || errorMessage || successMessage) && (
+                  <Space direction="vertical" style={{ width: "100%" }}>
+                    {isYoutubeUrl && (
+                      <Alert
+                        type="info"
+                        showIcon
+                        message="已检测到 YouTube 链接，将使用所选浏览器的 cookies。"
+                      />
+                    )}
+                    {errorMessage && (
+                      <Alert type="error" showIcon message={errorMessage} />
+                    )}
+                    {successMessage && (
+                      <Alert type="success" showIcon message={successMessage} />
+                    )}
+                  </Space>
+                )}
+
+                <Form.Item>
+                  <Space direction="vertical" style={{ width: "100%" }}>
+                    <Button
+                      type="primary"
+                      htmlType="submit"
+                      block
+                      size="large"
+                      loading={isDownloading}
+                      disabled={!url.trim()}
+                    >
+                      {downloadButtonLabel}
+                    </Button>
+                    {isDownloading && (
+                      <Space
+                        direction="vertical"
+                        size={4}
+                        style={{ width: "100%" }}
+                      >
+                        <Progress
+                          percent={progressPercent ?? 0}
+                          status={
+                            progressPercent === null ? "active" : undefined
+                          }
+                          showInfo={false}
+                        />
+                        <Text type="secondary">{progressText}</Text>
+                      </Space>
+                    )}
+                  </Space>
+                </Form.Item>
+              </Form>
+            </Card>
+
+            <Card
+              title="日志输出"
+              extra={
+                <Button onClick={clearLog} disabled={!logOutput}>
+                  清空
+                </Button>
+              }
+            >
+              <Paragraph className="log-output">
+                {logOutput || "暂无输出"}
+              </Paragraph>
+            </Card>
+          </Space>
         </div>
-        <pre className="log-output">{logOutput || "暂无输出"}</pre>
-      </section>
-    </div>
+      </div>
+
+      <Modal
+        open={isAboutDialogOpen}
+        onCancel={closeAboutDialog}
+        footer={null}
+        centered
+        title={
+          <Space align="center">
+            <LogoMark className="about-logo" />
+            <div>
+              <Title level={4} style={{ margin: 0 }}>
+                关于 yt-dlp-x
+              </Title>
+              <Text type="secondary">
+                下载、转换、管理你的音视频内容。
+              </Text>
+            </div>
+          </Space>
+        }
+      >
+        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+          <Paragraph>
+            yt-dlp-x 基于 Tauri 2 构建，提供直观的界面，让 yt-dlp 的强大能力更易于使用，支持音视频分离下载、Cookies 整合等特性。
+          </Paragraph>
+          <Space direction="vertical" size={4}>
+            <Button
+              type="link"
+              href="https://github.com/thehappymouse/yt-dlp-x"
+              target="_blank"
+              rel="noreferrer"
+              icon={<GithubOutlined />}
+            >
+              GitHub (https://github.com/thehappymouse/yt-dlp-x)
+            </Button>
+            <Button
+              type="link"
+              href="mailto:thehappymouse@gmail.com"
+              icon={<MailOutlined />}
+            >
+              thehappymouse@gmail.com
+            </Button>
+          </Space>
+          <div>
+            <Title level={5} style={{ marginBottom: 12 }}>
+              制作团队
+            </Title>
+            <List
+              dataSource={AUTHORS}
+              renderItem={(author) => (
+                <List.Item key={author.name} className="author-item">
+                  <Space direction="vertical" size={0}>
+                    <Text strong>{author.name}</Text>
+                    {author.role ? (
+                      <Text type="secondary">{author.role}</Text>
+                    ) : null}
+                  </Space>
+                </List.Item>
+              )}
+              split={false}
+            />
+          </div>
+        </Space>
+      </Modal>
+    </ConfigProvider>
   );
 }
+
+const formatPercentText = (value) => {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return null;
+  }
+
+  const clamped = Math.min(100, Math.max(0, value));
+  if (clamped === 100) {
+    return "100%";
+  }
+
+  const floored = Math.floor(clamped * 10) / 10;
+  const hasFraction =
+    Math.abs(floored - Math.trunc(floored)) > Number.EPSILON;
+
+  if (hasFraction) {
+    return `${floored.toFixed(1)}%`;
+  }
+
+  return `${Math.trunc(floored)}%`;
+};
 
 export default App;

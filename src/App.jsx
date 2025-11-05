@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { openPath } from "@tauri-apps/plugin-opener";
 import "./App.css";
+import logo from "./assets/logo.png"; // ✅ 关键
 
 const BROWSER_OPTIONS = [
   { label: "Chrome", value: "chrome" },
@@ -15,56 +16,12 @@ const BROWSER_OPTIONS = [
 const DEFAULT_BROWSER = "chrome";
 
 const AUTHORS = [
-  { name: "yt-dlp-x 团队", role: "开发与维护" },
+  { name: "@thehappymouse", role: "创意与打磨" },
   { name: "ChatGPT", role: "CTO" },
 ];
 
 const LogoMark = (props) => {
-  const idBase = useId().replace(/:/g, "");
-  const gradientId = `${idBase}-gradient`;
-  const accentId = `${idBase}-accent`;
-  const arrowId = `${idBase}-arrow`;
-
-  return (
-    <svg viewBox="0 0 64 64" role="img" aria-hidden="true" focusable="false" {...props}>
-      <defs>
-        <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#60a5fa" />
-          <stop offset="55%" stopColor="#2563eb" />
-          <stop offset="100%" stopColor="#1d4ed8" />
-        </linearGradient>
-        <linearGradient id={accentId} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#38bdf8" />
-          <stop offset="100%" stopColor="#2563eb" />
-        </linearGradient>
-        <linearGradient id={arrowId} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" />
-          <stop offset="100%" stopColor="#dbeafe" stopOpacity="0.8" />
-        </linearGradient>
-      </defs>
-      <rect x="4" y="4" width="56" height="56" rx="16" fill={`url(#${gradientId})`} />
-      <path
-        d="M14 24c0-5.523 4.477-10 10-10h9a6 6 0 016 6v4.8c0 2.209 1.791 4 4 4h7.6c3.315 0 6 2.685 6 6V44c0 5.523-4.477 10-10 10H24c-5.523 0-10-4.477-10-10z"
-        fill={`url(#${accentId})`}
-        opacity="0.4"
-      />
-      <rect x="36" y="14" width="18" height="12" rx="5" fill="#ef4444" />
-      <polygon points="44 24 44 16 50 20" fill="#ffffff" />
-      <path
-        d="M32 16a2 2 0 00-2 2v16.17l-4.59-4.58a2 2 0 10-2.83 2.83l8.49 8.48a2 2 0 002.83 0l8.49-8.48a2 2 0 10-2.83-2.83L34 34.17V18a2 2 0 00-2-2z"
-        fill={`url(#${arrowId})`}
-      />
-      <rect x="26" y="44" width="12" height="4" rx="2" fill="#e2e8f0" opacity="0.85" />
-      <path
-        d="M18 40l10 10M28 40l-10 10"
-        stroke="#bfdbfe"
-        strokeWidth="4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        opacity="0.9"
-      />
-    </svg>
-  );
+  return <img src={logo} {...props}></img>;
 };
 
 const extractErrorMessage = (error) => {
@@ -89,7 +46,11 @@ function App() {
   const [browser, setBrowser] = useState(DEFAULT_BROWSER);
   const [downloadType, setDownloadType] = useState("video");
   const [outputDir, setOutputDir] = useState("");
-  const [ytStatus, setYtStatus] = useState({ installed: false, path: "", source: "" });
+  const [ytStatus, setYtStatus] = useState({
+    installed: false,
+    path: "",
+    source: "",
+  });
   const [checkingYt, setCheckingYt] = useState(true);
   const [installing, setInstalling] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -149,7 +110,8 @@ function App() {
     }
 
     const floored = Math.floor(clamped * 10) / 10;
-    const hasFraction = Math.abs(floored - Math.trunc(floored)) > Number.EPSILON;
+    const hasFraction =
+      Math.abs(floored - Math.trunc(floored)) > Number.EPSILON;
 
     if (hasFraction) {
       return `${floored.toFixed(1)}%`;
@@ -169,7 +131,10 @@ function App() {
       }
 
       const { sessionId, line, stream } = payload;
-      if (typeof sessionId !== "string" || sessionId !== activeSessionIdRef.current) {
+      if (
+        typeof sessionId !== "string" ||
+        sessionId !== activeSessionIdRef.current
+      ) {
         return;
       }
       if (typeof line !== "string") {
@@ -181,7 +146,9 @@ function App() {
       const prefix = stream === "stderr" ? "[stderr] " : "";
       const formattedLine = prefix ? `${prefix}${line}` : line;
 
-      setLogOutput((prev) => (prev ? `${prev}\n${formattedLine}` : formattedLine));
+      setLogOutput((prev) =>
+        prev ? `${prev}\n${formattedLine}` : formattedLine
+      );
     })
       .then((unlisten) => {
         unlistenLog = unlisten;
@@ -196,39 +163,75 @@ function App() {
         return;
       }
 
-      const { sessionId, percent, percentText, eta, speed, total, status, raw } = payload;
-      if (typeof sessionId !== "string" || sessionId !== activeSessionIdRef.current) {
+      const {
+        sessionId,
+        percent,
+        percentText,
+        eta,
+        speed,
+        total,
+        status,
+        raw,
+      } = payload;
+      if (
+        typeof sessionId !== "string" ||
+        sessionId !== activeSessionIdRef.current
+      ) {
         return;
       }
 
       const parsedPercent =
-        typeof percent === "number" && Number.isFinite(percent) ? Math.min(100, Math.max(0, percent)) : null;
-      const fallbackPercentText = parsedPercent !== null ? formatPercentText(parsedPercent) : null;
+        typeof percent === "number" && Number.isFinite(percent)
+          ? Math.min(100, Math.max(0, percent))
+          : null;
+      const fallbackPercentText =
+        parsedPercent !== null ? formatPercentText(parsedPercent) : null;
 
       setDownloadProgress((prev) => {
-        const previous =
-          prev ?? {
-            percent: null,
-            percentText: null,
-            eta: null,
-            speed: null,
-            total: null,
-            status: null,
-            raw: null,
-          };
+        const previous = prev ?? {
+          percent: null,
+          percentText: null,
+          eta: null,
+          speed: null,
+          total: null,
+          status: null,
+          raw: null,
+        };
 
-        const nextPercent = parsedPercent !== null ? parsedPercent : previous.percent;
+        const nextPercent =
+          parsedPercent !== null ? parsedPercent : previous.percent;
         const providedPercentText =
-          typeof percentText === "string" && percentText.trim().length > 0 ? percentText.trim() : null;
+          typeof percentText === "string" && percentText.trim().length > 0
+            ? percentText.trim()
+            : null;
 
         return {
           percent: nextPercent,
-          percentText: providedPercentText ?? (parsedPercent !== null ? fallbackPercentText : previous.percentText),
-          eta: typeof eta === "string" && eta.trim().length > 0 ? eta.trim() : previous.eta,
-          speed: typeof speed === "string" && speed.trim().length > 0 ? speed.trim() : previous.speed,
-          total: typeof total === "string" && total.trim().length > 0 ? total.trim() : previous.total,
-          status: typeof status === "string" && status.trim().length > 0 ? status.trim() : previous.status,
-          raw: typeof raw === "string" && raw.trim().length > 0 ? raw.trim() : previous.raw,
+          percentText:
+            providedPercentText ??
+            (parsedPercent !== null
+              ? fallbackPercentText
+              : previous.percentText),
+          eta:
+            typeof eta === "string" && eta.trim().length > 0
+              ? eta.trim()
+              : previous.eta,
+          speed:
+            typeof speed === "string" && speed.trim().length > 0
+              ? speed.trim()
+              : previous.speed,
+          total:
+            typeof total === "string" && total.trim().length > 0
+              ? total.trim()
+              : previous.total,
+          status:
+            typeof status === "string" && status.trim().length > 0
+              ? status.trim()
+              : previous.status,
+          raw:
+            typeof raw === "string" && raw.trim().length > 0
+              ? raw.trim()
+              : previous.raw,
         };
       });
     })
@@ -416,11 +419,15 @@ function App() {
     }
 
     const hasPercent =
-      typeof downloadProgress.percent === "number" && Number.isFinite(downloadProgress.percent);
-    const percentValue = hasPercent ? Math.min(100, Math.max(0, downloadProgress.percent)) : null;
+      typeof downloadProgress.percent === "number" &&
+      Number.isFinite(downloadProgress.percent);
+    const percentValue = hasPercent
+      ? Math.min(100, Math.max(0, downloadProgress.percent))
+      : null;
 
     const percentLabel =
-      typeof downloadProgress.percentText === "string" && downloadProgress.percentText
+      typeof downloadProgress.percentText === "string" &&
+      downloadProgress.percentText
         ? downloadProgress.percentText
         : percentValue !== null
         ? formatPercentText(percentValue)
@@ -433,9 +440,12 @@ function App() {
         ? `耗时 ${downloadProgress.eta}`
         : null;
 
-    const parts = [percentLabel, downloadProgress.total, downloadProgress.speed, etaLabel].filter(
-      (value) => typeof value === "string" && value.length > 0,
-    );
+    const parts = [
+      percentLabel,
+      downloadProgress.total,
+      downloadProgress.speed,
+      etaLabel,
+    ].filter((value) => typeof value === "string" && value.length > 0);
 
     if (parts.length > 0) {
       return parts.join(" · ");
@@ -453,7 +463,9 @@ function App() {
   const ytStatusLabel = checkingYt
     ? "正在检测 yt-dlp..."
     : ytStatus.installed
-    ? `yt-dlp 已就绪（${ytStatus.source === "system" ? "系统版本" : "内置版本"}）`
+    ? `yt-dlp 已就绪（${
+        ytStatus.source === "system" ? "系统版本" : "内置版本"
+      }）`
     : "尚未检测到 yt-dlp";
 
   return (
@@ -482,7 +494,11 @@ function App() {
       </header>
 
       {isAboutDialogOpen && (
-        <div className="dialog-backdrop" role="presentation" onClick={closeAboutDialog}>
+        <div
+          className="dialog-backdrop"
+          role="presentation"
+          onClick={closeAboutDialog}
+        >
           <div
             id="about-dialog"
             className="dialog-card about-dialog"
@@ -496,23 +512,36 @@ function App() {
                 <LogoMark className="dialog-logo" />
                 <div>
                   <h2 id="about-dialog-title">关于 yt-dlp-x</h2>
-                  <p className="dialog-subtitle">下载、转换、管理你的音视频内容。</p>
+                  <p className="dialog-subtitle">
+                    下载、转换、管理你的音视频内容。
+                  </p>
                 </div>
               </div>
-              <button type="button" className="dialog-close" aria-label="关闭" onClick={closeAboutDialog}>
+              <button
+                type="button"
+                className="dialog-close"
+                aria-label="关闭"
+                onClick={closeAboutDialog}
+              >
                 ×
               </button>
             </div>
             <div className="dialog-body">
               <p>
-                yt-dlp-x 基于 Tauri 2 构建，提供直观的界面，让 yt-dlp 的强大能力更易于使用，
-                支持音视频分离下载、Cookies 整合等特性。
+                yt-dlp-x 基于 Tauri 2 构建，提供直观的界面，让 yt-dlp
+                的强大能力更易于使用， 支持音视频分离下载、Cookies 整合等特性。
               </p>
               <div className="dialog-links">
-                <a href="https://github.com/thehappymouse/yt-dlp-x" target="_blank" rel="noreferrer">
-                  GitHub 仓库
+                <a
+                  href="https://github.com/thehappymouse/yt-dlp-x"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  GitHub (https://github.com/thehappymouse/yt-dlp-x)
                 </a>
-                <a href="mailto:thehappymouse@gmail.com">thehappymouse@gmail.com</a>
+                <a href="mailto:thehappymouse@gmail.com">
+                  thehappymouse@gmail.com
+                </a>
               </div>
               <div className="dialog-section">
                 <h3>制作团队</h3>
@@ -520,7 +549,9 @@ function App() {
                   {AUTHORS.map((author) => (
                     <li key={author.name} className="author-item">
                       <span className="author-name">{author.name}</span>
-                      {author.role ? <span className="author-role">{author.role}</span> : null}
+                      {author.role ? (
+                        <span className="author-role">{author.role}</span>
+                      ) : null}
                     </li>
                   ))}
                 </ul>
@@ -535,7 +566,11 @@ function App() {
           <div
             className={[
               "status-pill",
-              checkingYt ? "loading" : ytStatus.installed ? "success" : "warning",
+              checkingYt
+                ? "loading"
+                : ytStatus.installed
+                ? "success"
+                : "warning",
             ].join(" ")}
           >
             {ytStatusLabel}
@@ -638,7 +673,9 @@ function App() {
               打开
             </button>
           </div>
-          <span className="field-helper">默认使用系统的下载目录，你可以自行修改。</span>
+          <span className="field-helper">
+            默认使用系统的下载目录，你可以自行修改。
+          </span>
         </div>
 
         {isYoutubeUrl && (
@@ -648,7 +685,9 @@ function App() {
         )}
 
         {errorMessage && <div className="alert error">{errorMessage}</div>}
-        {successMessage && <div className="alert success">{successMessage}</div>}
+        {successMessage && (
+          <div className="alert success">{successMessage}</div>
+        )}
 
         <div className="form-actions">
           <div className="action-wrapper">
@@ -664,7 +703,9 @@ function App() {
                 <div className="download-progress-track">
                   <div
                     className="download-progress-bar"
-                    style={{ width: `${Math.max(0, Math.min(100, progressBarWidth))}%` }}
+                    style={{
+                      width: `${Math.max(0, Math.min(100, progressBarWidth))}%`,
+                    }}
                   />
                 </div>
                 <div className="download-progress-text">{progressText}</div>

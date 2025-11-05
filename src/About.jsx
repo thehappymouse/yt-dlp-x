@@ -10,7 +10,7 @@ const AUTHORS = [
   { name: "www.cto.new", role: "GPT5 Codex" },
 ];
 
-const LogoMark = (props) => <img src={logo} alt="yt-dlp-x logo" {...props} />;
+
 
 const About = ({ open, onClose }) => (
   <Modal
@@ -20,7 +20,7 @@ const About = ({ open, onClose }) => (
     centered
     title={
       <Space align="center">
-        <LogoMark className="about-logo" />
+        <img src={logo} alt="yt-dlp-x logo" className="about-logo" />
 
         <Title level={4} style={{ margin: 0 }}>
           关于 yt-dlp-x

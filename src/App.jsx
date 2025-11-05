@@ -564,10 +564,10 @@ function App() {
       <div className="app-background">
         <div className="app-shell">
           <Space direction="vertical" size="large" style={{ width: "100%" }}>
-            <Card bordered={false} className="hero-card">
+            <Card border={false} className="hero-card">
               <Space direction="vertical" size="middle" align="center">
                 <Space align="center" size="middle" wrap>
-                  <LogoMark className="app-logo" />
+                  <img src={logo} alt="yt-dlp-x logo" className="app-logo" />
                   <Title level={2} style={{ margin: 0 }}>
                     yt-dlp-x
                   </Title>
@@ -578,7 +578,7 @@ function App() {
                   </Text>
                   <Tag color="#108ee9">{APP_VERSION}</Tag>
                   <Button
-                    type="default"
+                    type="link"
                     icon={<InfoCircleOutlined />}
                     onClick={openAboutDialog}
                   >

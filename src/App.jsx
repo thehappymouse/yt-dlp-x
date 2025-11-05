@@ -29,6 +29,7 @@ import {
   VideoCameraOutlined,
 } from "@ant-design/icons";
 import About from "./About";
+import { APP_VERSION } from "./version";
 import "./App.css";
 import logo from "./assets/logo.png";
 
@@ -575,6 +576,9 @@ function App() {
                   <Text type="secondary">
                     基于 Tauri 2 的 yt-dlp 图形界面，支持音视频分离下载。
                   </Text>
+                  <Tag color="geekblue" bordered>
+                    {APP_VERSION}
+                  </Tag>
                   <Button
                     type="default"
                     icon={<InfoCircleOutlined />}

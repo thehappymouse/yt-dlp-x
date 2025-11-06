@@ -12,6 +12,7 @@ import {
   FloatButton,
   Form,
   Input,
+  Modal,
   Progress,
   Select,
   Segmented,
@@ -24,6 +25,7 @@ import {
   CheckCircleOutlined,
   DownloadOutlined,
   ExclamationCircleOutlined,
+  FileTextOutlined,
   FolderOutlined,
   FolderOpenOutlined,
   InfoCircleOutlined,
@@ -92,12 +94,15 @@ function App() {
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
-  const [isSettingsDrawerOpen, setIsSettingsDrawerOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isLogDrawerOpen, setIsLogDrawerOpen] = useState(false);
 
   const closeAboutDialog = () => setIsAboutDialogOpen(false);
   const openAboutDialog = () => setIsAboutDialogOpen(true);
-  const closeSettingsDrawer = () => setIsSettingsDrawerOpen(false);
-  const openSettingsDrawer = () => setIsSettingsDrawerOpen(true);
+  const closeSettingsModal = () => setIsSettingsModalOpen(false);
+  const openSettingsModal = () => setIsSettingsModalOpen(true);
+  const closeLogDrawer = () => setIsLogDrawerOpen(false);
+  const openLogDrawer = () => setIsLogDrawerOpen(true);
 
   const activeSessionIdRef = useRef(null);
   const hasRealtimeLogsRef = useRef(false);
@@ -568,6 +573,8 @@ function App() {
     ? `检测到的 ffmpeg 路径：${ffStatus.path}`
     : "未检测到 ffmpeg，请先在系统中安装，以支持音频转换与封面嵌入。";
 
+  const showYtDlpWarningBadge = !checkingYt && !ytStatus.installed;
+
   return (
     <ConfigProvider
       theme={{
@@ -728,22 +735,6 @@ function App() {
               </Form>
             </Card>
 
-            <Card
-              title="日志输出"
-              extra={
-                <Button onClick={clearLog} disabled={!logOutput}>
-                  清空
-                </Button>
-              }
-            >
-              <Paragraph
-                className="log-output"
-                ref={logContainerRef}
-                onScroll={handleLogScroll}
-              >
-                {logOutput || "暂无输出"}
-              </Paragraph>
-            </Card>
           </Space>
         </div>
       </div>
@@ -752,6 +743,7 @@ function App() {
         trigger="click"
         type="primary"
         icon={<MenuOutlined />}
+        badge={showYtDlpWarningBadge ? { dot: true, color: "#ff4d4f" } : undefined}
         style={{ right: 24, bottom: 24 }}
       >
         <FloatButton
@@ -762,16 +754,27 @@ function App() {
         <FloatButton
           icon={<SettingOutlined />}
           tooltip="设置"
-          onClick={openSettingsDrawer}
+          onClick={openSettingsModal}
+          badge={
+            showYtDlpWarningBadge
+              ? { dot: true, color: "#ff4d4f" }
+              : undefined
+          }
+        />
+        <FloatButton
+          icon={<FileTextOutlined />}
+          tooltip="日志"
+          onClick={openLogDrawer}
         />
       </FloatButton.Group>
 
-      <Drawer
+      <Modal
         title="设置"
-        placement="right"
-        width={420}
-        onClose={closeSettingsDrawer}
-        open={isSettingsDrawerOpen}
+        open={isSettingsModalOpen}
+        onCancel={closeSettingsModal}
+        footer={null}
+        centered
+        width={520}
       >
         <Space direction="vertical" size="large" style={{ width: "100%" }}>
           <Space direction="vertical" size="small" style={{ width: "100%" }}>
@@ -817,6 +820,27 @@ function App() {
             <Text type="secondary">{ffStatusHelperText}</Text>
           </Space>
         </Space>
+      </Modal>
+
+      <Drawer
+        title="日志输出"
+        placement="bottom"
+        height={420}
+        onClose={closeLogDrawer}
+        open={isLogDrawerOpen}
+        extra={
+          <Button onClick={clearLog} disabled={!logOutput}>
+            清空
+          </Button>
+        }
+      >
+        <Paragraph
+          className="log-output"
+          ref={logContainerRef}
+          onScroll={handleLogScroll}
+        >
+          {logOutput || "暂无输出"}
+        </Paragraph>
       </Drawer>
 
       <About open={isAboutDialogOpen} onClose={closeAboutDialog} />

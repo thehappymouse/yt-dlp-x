@@ -24,16 +24,17 @@ import {
   AlertCircle,
   CheckCircle,
   Download,
-  Expand,
+  SquarePlay,
   Folder,
   FolderOpen,
   Info,
   Loader2,
   Menu,
-  Music,
+  Headphones,
   RefreshCcw,
   Settings,
   Video,
+  SquareChevronRight
 } from "lucide-react";
 import About from "./About";
 import { APP_VERSION } from "./version";
@@ -628,12 +629,12 @@ function App() {
                       {
                         label: "视频 (最佳画质)",
                         value: "video",
-                        icon: <Video size={18} strokeWidth={1.75} />,
+                        icon: <SquarePlay size={18} strokeWidth={2} />,
                       },
                       {
                         label: "纯音频 (MP3)",
                         value: "audio",
-                        icon: <Music size={18} strokeWidth={1.75} />,
+                        icon: <Headphones size={18} strokeWidth={2} />,
                       },
                     ]}
                     value={downloadType}
@@ -757,7 +758,7 @@ function App() {
           }
         />
         <FloatButton
-          icon={<Expand size={20} strokeWidth={1.75} />}
+          icon={<SquareChevronRight size={20} strokeWidth={1.75} />}
           tooltip="Debugger"
           onClick={openLogDrawer}
         />

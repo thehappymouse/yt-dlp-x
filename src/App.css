@@ -85,3 +85,13 @@ body {
     transform: rotate(360deg);
   }
 }
+.download-type-segmented .ant-segmented-item-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.download-type-segmented svg {
+  vertical-align: middle;
+}

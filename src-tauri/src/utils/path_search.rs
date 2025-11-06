@@ -2,12 +2,7 @@
 use directories_next::BaseDirs;
 
 #[cfg(target_os = "macos")]
-use std::{
-    collections::HashSet,
-    env,
-    fs,
-    path::PathBuf,
-};
+use std::{collections::HashSet, env, fs, path::PathBuf};
 
 /// Locate binaries in common macOS installation directories.
 #[cfg(target_os = "macos")]

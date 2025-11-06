@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { open } from "@tauri-apps/api/dialog";
 import {
   Alert,
   Button,
@@ -21,6 +22,7 @@ import {
   CheckCircleOutlined,
   DownloadOutlined,
   ExclamationCircleOutlined,
+  FolderOutlined,
   FolderOpenOutlined,
   InfoCircleOutlined,
   LoadingOutlined,
@@ -394,6 +396,23 @@ function App() {
     }
   };
 
+  const handleSelectOutputDir = async () => {
+    try {
+      const trimmed = outputDir.trim();
+      const selected = await open({
+        directory: true,
+        multiple: false,
+        defaultPath: trimmed ? trimmed : undefined,
+      });
+
+      if (typeof selected === "string" && selected.trim()) {
+        setOutputDir(selected);
+      }
+    } catch (err) {
+      setErrorMessage(`选择下载目录失败：${extractErrorMessage(err)}`);
+    }
+  };
+
   const clearLog = () => {
     setLogOutput("");
   };
@@ -688,6 +707,12 @@ function App() {
                       onChange={(event) => setOutputDir(event.target.value)}
                       placeholder="下载保存目录"
                     />
+                    <Button
+                      icon={<FolderOutlined />}
+                      onClick={handleSelectOutputDir}
+                    >
+                      更换
+                    </Button>
                     <Button
                       icon={<FolderOpenOutlined />}
                       onClick={handleOpenDir}

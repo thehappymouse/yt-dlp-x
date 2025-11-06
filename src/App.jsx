@@ -21,20 +21,20 @@ import {
   Typography,
 } from "antd";
 import {
-  AudioOutlined,
-  CheckCircleOutlined,
-  DownloadOutlined,
-  ExclamationCircleOutlined,
-  ExpandOutlined,
-  FolderOutlined,
-  FolderOpenOutlined,
-  InfoCircleOutlined,
-  LoadingOutlined,
-  MenuOutlined,
-  ReloadOutlined,
-  SettingOutlined,
-  VideoCameraOutlined,
-} from "@ant-design/icons";
+  AlertCircle,
+  CheckCircle,
+  Download,
+  Expand,
+  Folder,
+  FolderOpen,
+  Info,
+  Loader2,
+  Menu,
+  Music,
+  RefreshCcw,
+  Settings,
+  Video,
+} from "lucide-react";
 import About from "./About";
 import { APP_VERSION } from "./version";
 import "./App.css";
@@ -534,11 +534,11 @@ function App() {
     : "warning";
 
   const statusTagIcon = checkingYt ? (
-    <LoadingOutlined spin />
+    <Loader2 className="status-icon icon-spin" size={14} strokeWidth={2.75} />
   ) : ytStatus.installed ? (
-    <CheckCircleOutlined />
+    <CheckCircle className="status-icon" size={14} strokeWidth={2.5} />
   ) : (
-    <ExclamationCircleOutlined />
+    <AlertCircle className="status-icon" size={14} strokeWidth={2.5} />
   );
 
   const ffStatusLabel = checkingFf
@@ -554,11 +554,11 @@ function App() {
     : "warning";
 
   const ffStatusTagIcon = checkingFf ? (
-    <LoadingOutlined spin />
+    <Loader2 className="status-icon icon-spin" size={14} strokeWidth={2.75} />
   ) : ffStatus.installed ? (
-    <CheckCircleOutlined />
+    <CheckCircle className="status-icon" size={14} strokeWidth={2.5} />
   ) : (
-    <ExclamationCircleOutlined />
+    <AlertCircle className="status-icon" size={14} strokeWidth={2.5} />
   );
 
   const ytStatusHelperText = checkingYt
@@ -604,18 +604,13 @@ function App() {
                     yt-dlp-x
                   </Title>
                 </Space>
-                <Space align="center" size="middle" wrap>
-                  <Text type="secondary">
-                    基于 Tauri 2 的 yt-dlp 图形界面，支持音视频分离下载。
-                  </Text>
-                  <Tag color="#108ee9">{APP_VERSION}</Tag>
-                </Space>
+                <Tag color="#108ee9">{APP_VERSION}</Tag>
               </Space>
             </Card>
 
             <Card>
-              <Form layout="vertical" onSubmitCapture={handleDownload} >
-                <Form.Item label="视频链接"  required>
+              <Form layout="vertical" onSubmitCapture={handleDownload}>
+                <Form.Item label="视频链接" required>
                   <Input
                     value={url}
                     onChange={(event) => setUrl(event.target.value)}
@@ -631,12 +626,12 @@ function App() {
                       {
                         label: "视频 (最佳画质)",
                         value: "video",
-                        icon: <VideoCameraOutlined />,
+                        icon: <Video size={18} strokeWidth={1.75} />,
                       },
                       {
                         label: "纯音频 (MP3)",
                         value: "audio",
-                        icon: <AudioOutlined />,
+                        icon: <Music size={18} strokeWidth={1.75} />,
                       },
                     ]}
                     value={downloadType}
@@ -666,13 +661,13 @@ function App() {
                       placeholder="下载保存目录"
                     />
                     <Button
-                      icon={<FolderOutlined />}
+                      icon={<Folder size={18} strokeWidth={1.75} />}
                       onClick={handleSelectOutputDir}
                     >
                       更换
                     </Button>
                     <Button
-                      icon={<FolderOpenOutlined />}
+                      icon={<FolderOpen size={18} strokeWidth={1.75} />}
                       onClick={handleOpenDir}
                       type="link"
                       disabled={!outputDir.trim()}
@@ -680,7 +675,6 @@ function App() {
                       打开
                     </Button>
                   </Space.Compact>
-                  
                 </Form.Item>
 
                 {(isYoutubeUrl || errorMessage || successMessage) && (
@@ -735,24 +729,29 @@ function App() {
             </Card>
 
           </Space>
+          <footer className="app-footer">
+            <Text type="secondary">
+              基于 Tauri 2 的 yt-dlp 图形界面，支持音视频分离下载。
+            </Text>
+          </footer>
         </div>
       </div>
 
       <FloatButton.Group
         trigger="click"
         type="primary"
-        icon={<MenuOutlined />}
+        icon={<Menu size={20} strokeWidth={1.75} />}
         shape="square"
         badge={showYtDlpWarningBadge ? { dot: true, color: "#ff4d4f" } : undefined}
         style={{ right: 24, bottom: 24 }}
       >
         <FloatButton
-          icon={<InfoCircleOutlined />}
+          icon={<Info size={20} strokeWidth={1.75} />}
           tooltip="关于"
           onClick={openAboutDialog}
         />
         <FloatButton
-          icon={<SettingOutlined />}
+          icon={<Settings size={20} strokeWidth={1.75} />}
           tooltip="设置"
           onClick={openSettingsModal}
           badge={
@@ -762,7 +761,7 @@ function App() {
           }
         />
         <FloatButton
-          icon={<ExpandOutlined />}
+          icon={<Expand size={20} strokeWidth={1.75} />}
           tooltip="Debugger"
           onClick={openLogDrawer}
         />
@@ -798,7 +797,7 @@ function App() {
               </Space>
               <Space wrap>
                 <Button
-                  icon={<ReloadOutlined />}
+                  icon={<RefreshCcw size={18} strokeWidth={1.75} />}
                   onClick={refreshBinaryStatuses}
                   disabled={checkingYt || checkingFf || isDownloading}
                   loading={checkingYt || checkingFf}
@@ -808,7 +807,7 @@ function App() {
                 <Button
                   type="primary"
                   ghost
-                  icon={<DownloadOutlined />}
+                  icon={<Download size={18} strokeWidth={1.75} />}
                   onClick={installYtDlp}
                   loading={installing}
                 >

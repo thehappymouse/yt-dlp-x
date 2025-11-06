@@ -62,3 +62,26 @@ body {
   align-items: center;
   gap: 8px;
 }
+
+.app-footer {
+  margin-top: 48px;
+  text-align: center;
+}
+
+.status-icon {
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.icon-spin {
+  animation: icon-spin 1s linear infinite;
+}
+
+@keyframes icon-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

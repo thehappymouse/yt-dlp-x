@@ -25,7 +25,7 @@ import {
   CheckCircleOutlined,
   DownloadOutlined,
   ExclamationCircleOutlined,
-  FileTextOutlined,
+  ExpandOutlined,
   FolderOutlined,
   FolderOpenOutlined,
   InfoCircleOutlined,
@@ -614,8 +614,8 @@ function App() {
             </Card>
 
             <Card>
-              <Form layout="vertical" onSubmitCapture={handleDownload}>
-                <Form.Item label="视频链接" required>
+              <Form layout="vertical" onSubmitCapture={handleDownload} >
+                <Form.Item label="视频链接"  required>
                   <Input
                     value={url}
                     onChange={(event) => setUrl(event.target.value)}
@@ -674,14 +674,13 @@ function App() {
                     <Button
                       icon={<FolderOpenOutlined />}
                       onClick={handleOpenDir}
+                      type="link"
                       disabled={!outputDir.trim()}
                     >
                       打开
                     </Button>
                   </Space.Compact>
-                  <Text type="secondary" className="field-helper">
-                    默认使用系统的下载目录，你可以自行修改。
-                  </Text>
+                  
                 </Form.Item>
 
                 {(isYoutubeUrl || errorMessage || successMessage) && (
@@ -743,6 +742,7 @@ function App() {
         trigger="click"
         type="primary"
         icon={<MenuOutlined />}
+        shape="square"
         badge={showYtDlpWarningBadge ? { dot: true, color: "#ff4d4f" } : undefined}
         style={{ right: 24, bottom: 24 }}
       >
@@ -762,8 +762,8 @@ function App() {
           }
         />
         <FloatButton
-          icon={<FileTextOutlined />}
-          tooltip="日志"
+          icon={<ExpandOutlined />}
+          tooltip="Debugger"
           onClick={openLogDrawer}
         />
       </FloatButton.Group>
@@ -823,7 +823,7 @@ function App() {
       </Modal>
 
       <Drawer
-        title="日志输出"
+        title="Debugger"
         placement="bottom"
         height={420}
         onClose={closeLogDrawer}

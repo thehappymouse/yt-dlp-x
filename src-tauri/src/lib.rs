@@ -3,7 +3,7 @@ mod utils;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::Stdio,
     sync::Arc,
     time::{SystemTime, UNIX_EPOCH},
@@ -415,6 +415,131 @@ async fn get_default_download_dir() -> Result<String, String> {
     Ok(path_to_string(&yt_dlp::default_download_dir()))
 }
 
+#[tauri::command]
+async fn open_directory(path: String) -> Result<(), String> {
+    let trimmed = path.trim();
+    if trimmed.is_empty() {
+        return Err("请输入有效的目录路径".into());
+    }
+
+    let resolved_path = expand_user_path(trimmed)?;
+
+    if !resolved_path.exists() {
+        return Err("目标路径不存在".into());
+    }
+
+    let canonical_path = resolved_path
+        .canonicalize()
+        .map_err(|err| format!("解析路径失败: {err}"))?;
+
+    if !canonical_path.is_dir() {
+        return Err("仅支持打开目录路径".into());
+    }
+
+    let target = canonical_path.clone();
+
+    let open_result =
+        tauri::async_runtime::spawn_blocking(move || open_in_file_manager(&target))
+            .await
+            .map_err(|err| format!("打开目录失败: {err}"))?;
+
+    open_result?;
+
+    Ok(())
+}
+
+fn expand_user_path(input: &str) -> Result<PathBuf, String> {
+    if input == "~" {
+        user_home_dir().ok_or_else(|| "无法定位用户主目录".to_string())
+    } else if let Some(stripped) = input
+        .strip_prefix("~/")
+        .or_else(|| input.strip_prefix("~\\"))
+    {
+        user_home_dir()
+            .map(|home| home.join(stripped))
+            .ok_or_else(|| "无法定位用户主目录".to_string())
+    } else {
+        Ok(PathBuf::from(input))
+    }
+}
+
+fn user_home_dir() -> Option<PathBuf> {
+    directories_next::BaseDirs::new().map(|base| base.home_dir().to_path_buf())
+}
+
+#[cfg(target_os = "macos")]
+fn open_in_file_manager(path: &Path) -> Result<(), String> {
+    let status = std::process::Command::new("open")
+        .arg(path)
+        .status()
+        .map_err(|err| format!("执行 open 命令失败: {err}"))?;
+
+    if status.success() {
+        Ok(())
+    } else {
+        Err(format!(
+            "打开目录失败，退出代码: {}",
+            exit_status_message(status)
+        ))
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn open_in_file_manager(path: &Path) -> Result<(), String> {
+    use std::ffi::OsString;
+
+    let mut command = std::process::Command::new("explorer");
+    if path.is_dir() {
+        command.arg(path);
+    } else {
+        let mut argument = OsString::from("/select,");
+        argument.push(path);
+        command.arg(argument);
+    }
+
+    let status = command
+        .status()
+        .map_err(|err| format!("执行 explorer 命令失败: {err}"))?;
+
+    if status.success() {
+        Ok(())
+    } else {
+        Err(format!(
+            "打开目录失败，退出代码: {}",
+            exit_status_message(status)
+        ))
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn open_in_file_manager(path: &Path) -> Result<(), String> {
+    let status = std::process::Command::new("xdg-open")
+        .arg(path)
+        .status()
+        .map_err(|err| format!("执行 xdg-open 命令失败: {err}"))?;
+
+    if status.success() {
+        Ok(())
+    } else {
+        Err(format!(
+            "打开目录失败，退出代码: {}",
+            exit_status_message(status)
+        ))
+    }
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
+fn open_in_file_manager(_path: &Path) -> Result<(), String> {
+    Err("当前平台暂不支持打开目录".into())
+}
+
+fn exit_status_message(status: std::process::ExitStatus) -> String {
+    status
+        .code()
+        .map(|code| code.to_string())
+        .unwrap_or_else(|| "未知".into())
+}
+
 fn ensure_ffmpeg_available() -> Result<PathBuf, String> {
     detect_ffmpeg_path().ok_or_else(|| "未检测到系统 ffmpeg，请先安装后再试，以便下载音频并嵌入封面。".into())
 }
@@ -454,7 +579,8 @@ pub fn run() {
             check_ffmpeg,
             install_yt_dlp,
             download_media,
-            get_default_download_dir
+            get_default_download_dir,
+            open_directory
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

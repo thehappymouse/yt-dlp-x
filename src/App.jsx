@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { openPath } from "@tauri-apps/plugin-opener";
 import {
   Alert,
   Button,
@@ -389,7 +388,7 @@ function App() {
     }
 
     try {
-      await openPath(targetDir);
+      await invoke("open_directory", { path: targetDir });
     } catch (err) {
       setErrorMessage(`无法打开目录：${extractErrorMessage(err)}`);
     }

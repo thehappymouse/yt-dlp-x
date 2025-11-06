@@ -52,8 +52,6 @@ const BROWSER_OPTIONS = [
 
 const DEFAULT_BROWSER = "chrome";
 
-const LogoMark = (props) => <img src={logo} alt="yt-dlp-x logo" {...props} />;
-
 const extractErrorMessage = (error) => {
   if (!error) return "未知错误";
   if (typeof error === "string") return error;
@@ -600,11 +598,15 @@ function App() {
               <Space direction="vertical" size="middle" align="center">
                 <Space align="center" size="middle" wrap>
                   <img src={logo} alt="yt-dlp-x logo" className="app-logo" />
-                  <Title level={2} style={{ margin: 0 }}>
-                    yt-dlp-x
-                  </Title>
+                  <div>
+                    <Title level={2} style={{ margin: 0, textAlign: "left" }}>
+                      yt-dlp-x
+                    </Title>
+                    <Text type="secondary">
+                      一款基于 Tauri2 的 yt-dlp 图形化下载工具
+                    </Text>
+                  </div>
                 </Space>
-                <Tag color="#108ee9">{APP_VERSION}</Tag>
               </Space>
             </Card>
 
@@ -640,7 +642,7 @@ function App() {
                   />
                 </Form.Item>
 
-                <Form.Item label="YouTube Cookies 浏览器">
+                <Form.Item label="Cookies 浏览器">
                   <Select
                     value={browser}
                     onChange={(value) => setBrowser(value)}
@@ -648,8 +650,7 @@ function App() {
                     options={BROWSER_OPTIONS}
                   />
                   <Text type="secondary" className="field-helper">
-                    下载 YouTube 视频时，会从所选浏览器读取
-                    cookies（需浏览器已登录）。
+                    因Youtube/Bilibili等网站限制，工具会从所选浏览器读取cookies（需浏览器已登录）。
                   </Text>
                 </Form.Item>
 
@@ -702,7 +703,7 @@ function App() {
                       htmlType="submit"
                       block
                       size="large"
-                      style={{marginTop:5}}
+                      style={{ marginTop: 5 }}
                       loading={isDownloading}
                       disabled={!url.trim()}
                     >
@@ -729,11 +730,6 @@ function App() {
               </Form>
             </Card>
           </Space>
-          <footer className="app-footer">
-            <Text type="secondary">
-              基于 Tauri 2 的 yt-dlp 图形界面，支持音视频分离下载。
-            </Text>
-          </footer>
         </div>
       </div>
 

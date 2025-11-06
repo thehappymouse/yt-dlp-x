@@ -614,8 +614,8 @@ function App() {
             </Card>
 
             <Card>
-              <Form layout="vertical" onSubmitCapture={handleDownload} >
-                <Form.Item label="视频链接"  required>
+              <Form layout="vertical" onSubmitCapture={handleDownload}>
+                <Form.Item label="视频链接" required>
                   <Input
                     value={url}
                     onChange={(event) => setUrl(event.target.value)}
@@ -680,7 +680,6 @@ function App() {
                       打开
                     </Button>
                   </Space.Compact>
-                  
                 </Form.Item>
 
                 {(isYoutubeUrl || errorMessage || successMessage) && (
@@ -708,6 +707,7 @@ function App() {
                       htmlType="submit"
                       block
                       size="large"
+                      style={{marginTop:5}}
                       loading={isDownloading}
                       disabled={!url.trim()}
                     >
@@ -733,7 +733,6 @@ function App() {
                 </Form.Item>
               </Form>
             </Card>
-
           </Space>
         </div>
       </div>
@@ -743,7 +742,9 @@ function App() {
         type="primary"
         icon={<MenuOutlined />}
         shape="square"
-        badge={showYtDlpWarningBadge ? { dot: true, color: "#ff4d4f" } : undefined}
+        badge={
+          showYtDlpWarningBadge ? { dot: true, color: "#ff4d4f" } : undefined
+        }
         style={{ right: 24, bottom: 24 }}
       >
         <FloatButton
@@ -756,9 +757,7 @@ function App() {
           tooltip="设置"
           onClick={openSettingsModal}
           badge={
-            showYtDlpWarningBadge
-              ? { dot: true, color: "#ff4d4f" }
-              : undefined
+            showYtDlpWarningBadge ? { dot: true, color: "#ff4d4f" } : undefined
           }
         />
         <FloatButton
@@ -788,11 +787,7 @@ function App() {
                 <Tag color={statusTagColor} icon={statusTagIcon} bordered>
                   {ytStatusLabel}
                 </Tag>
-                <Tag
-                  color={ffStatusTagColor}
-                  icon={ffStatusTagIcon}
-                  bordered
-                >
+                <Tag color={ffStatusTagColor} icon={ffStatusTagIcon} bordered>
                   {ffStatusLabel}
                 </Tag>
               </Space>
@@ -825,9 +820,12 @@ function App() {
       <Drawer
         title="Debugger"
         placement="bottom"
-        height={420}
+        height={450}
         onClose={closeLogDrawer}
         open={isLogDrawerOpen}
+        styles={{
+          body: { padding: 10 },
+        }}
         extra={
           <Button onClick={clearLog} disabled={!logOutput}>
             清空

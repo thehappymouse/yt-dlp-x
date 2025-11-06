@@ -7,7 +7,9 @@ import {
   Button,
   Card,
   ConfigProvider,
+  Drawer,
   Flex,
+  FloatButton,
   Form,
   Input,
   Progress,
@@ -26,7 +28,9 @@ import {
   FolderOpenOutlined,
   InfoCircleOutlined,
   LoadingOutlined,
+  MenuOutlined,
   ReloadOutlined,
+  SettingOutlined,
   VideoCameraOutlined,
 } from "@ant-design/icons";
 import About from "./About";
@@ -88,9 +92,12 @@ function App() {
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
+  const [isSettingsDrawerOpen, setIsSettingsDrawerOpen] = useState(false);
 
   const closeAboutDialog = () => setIsAboutDialogOpen(false);
   const openAboutDialog = () => setIsAboutDialogOpen(true);
+  const closeSettingsDrawer = () => setIsSettingsDrawerOpen(false);
+  const openSettingsDrawer = () => setIsSettingsDrawerOpen(true);
 
   const activeSessionIdRef = useRef(null);
   const hasRealtimeLogsRef = useRef(false);
@@ -595,63 +602,7 @@ function App() {
                     基于 Tauri 2 的 yt-dlp 图形界面，支持音视频分离下载。
                   </Text>
                   <Tag color="#108ee9">{APP_VERSION}</Tag>
-                  <Button
-                    type="link"
-                    icon={<InfoCircleOutlined />}
-                    onClick={openAboutDialog}
-                  >
-                    关于
-                  </Button>
                 </Space>
-              </Space>
-            </Card>
-
-            <Card>
-              <Space
-                direction="vertical"
-                size="small"
-                style={{ width: "100%" }}
-              >
-                <Flex
-                  align="center"
-                  justify="space-between"
-                  wrap="wrap"
-                  gap="small"
-                >
-                  <Space align="center" size="small" wrap>
-                    <Tag color={statusTagColor} icon={statusTagIcon} bordered>
-                      {ytStatusLabel}
-                    </Tag>
-                    <Tag
-                      color={ffStatusTagColor}
-                      icon={ffStatusTagIcon}
-                      bordered
-                    >
-                      {ffStatusLabel}
-                    </Tag>
-                  </Space>
-                  <Space wrap>
-                    <Button
-                      icon={<ReloadOutlined />}
-                      onClick={refreshBinaryStatuses}
-                      disabled={checkingYt || checkingFf || isDownloading}
-                      loading={checkingYt || checkingFf}
-                    >
-                      重新检测
-                    </Button>
-                    <Button
-                      type="primary"
-                      ghost
-                      icon={<DownloadOutlined />}
-                      onClick={installYtDlp}
-                      loading={installing}
-                    >
-                      安装 / 更新 yt-dlp
-                    </Button>
-                  </Space>
-                </Flex>
-                <Text type="secondary">{ytStatusHelperText}</Text>
-                <Text type="secondary">{ffStatusHelperText}</Text>
               </Space>
             </Card>
 
@@ -796,6 +747,77 @@ function App() {
           </Space>
         </div>
       </div>
+
+      <FloatButton.Group
+        trigger="click"
+        type="primary"
+        icon={<MenuOutlined />}
+        style={{ right: 24, bottom: 24 }}
+      >
+        <FloatButton
+          icon={<InfoCircleOutlined />}
+          tooltip="关于"
+          onClick={openAboutDialog}
+        />
+        <FloatButton
+          icon={<SettingOutlined />}
+          tooltip="设置"
+          onClick={openSettingsDrawer}
+        />
+      </FloatButton.Group>
+
+      <Drawer
+        title="设置"
+        placement="right"
+        width={420}
+        onClose={closeSettingsDrawer}
+        open={isSettingsDrawerOpen}
+      >
+        <Space direction="vertical" size="large" style={{ width: "100%" }}>
+          <Space direction="vertical" size="small" style={{ width: "100%" }}>
+            <Flex
+              align="center"
+              justify="space-between"
+              wrap="wrap"
+              gap="small"
+            >
+              <Space align="center" size="small" wrap>
+                <Tag color={statusTagColor} icon={statusTagIcon} bordered>
+                  {ytStatusLabel}
+                </Tag>
+                <Tag
+                  color={ffStatusTagColor}
+                  icon={ffStatusTagIcon}
+                  bordered
+                >
+                  {ffStatusLabel}
+                </Tag>
+              </Space>
+              <Space wrap>
+                <Button
+                  icon={<ReloadOutlined />}
+                  onClick={refreshBinaryStatuses}
+                  disabled={checkingYt || checkingFf || isDownloading}
+                  loading={checkingYt || checkingFf}
+                >
+                  重新检测
+                </Button>
+                <Button
+                  type="primary"
+                  ghost
+                  icon={<DownloadOutlined />}
+                  onClick={installYtDlp}
+                  loading={installing}
+                >
+                  安装 / 更新 yt-dlp
+                </Button>
+              </Space>
+            </Flex>
+            <Text type="secondary">{ytStatusHelperText}</Text>
+            <Text type="secondary">{ffStatusHelperText}</Text>
+          </Space>
+        </Space>
+      </Drawer>
 
       <About open={isAboutDialogOpen} onClose={closeAboutDialog} />
     </ConfigProvider>

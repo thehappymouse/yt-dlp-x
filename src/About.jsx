@@ -25,12 +25,13 @@ const About = ({ open, onClose }) => (
         <Title level={4} style={{ margin: 0 }}>
           关于 yt-dlp-x
         </Title>
+        <Tag color="#78868fff" size="small">{APP_VERSION}</Tag>
       </Space>
     }
   >
     <Space direction="vertical" size="middle" style={{ width: "100%" }}>
       <Paragraph>
-        <Tag color="#108ee9">{APP_VERSION}</Tag>
+        
         yt-dlp-x 基于 Tauri 2 构建，提供直观的界面，让 yt-dlp
         的强大能力更易于使用，支持音视频分离下载、Cookies 整合等特性。
       </Paragraph>

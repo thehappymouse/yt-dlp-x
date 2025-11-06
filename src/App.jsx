@@ -20,6 +20,7 @@ import {
   Tag,
   Typography,
 } from "antd";
+import { RedoOutlined, DownloadOutlined } from "@ant-design/icons";
 import {
   AlertCircle,
   CheckCircle,
@@ -34,7 +35,7 @@ import {
   RefreshCcw,
   Settings,
   Video,
-  SquareChevronRight
+  SquareChevronRight,
 } from "lucide-react";
 import About from "./About";
 import { APP_VERSION } from "./version";
@@ -746,12 +747,10 @@ function App() {
       >
         <FloatButton
           icon={<Info size={20} strokeWidth={1.75} />}
-          tooltip="关于"
           onClick={openAboutDialog}
         />
         <FloatButton
           icon={<Settings size={20} strokeWidth={1.75} />}
-          tooltip="设置"
           onClick={openSettingsModal}
           badge={
             showYtDlpWarningBadge ? { dot: true, color: "#ff4d4f" } : undefined
@@ -759,7 +758,6 @@ function App() {
         />
         <FloatButton
           icon={<SquareChevronRight size={20} strokeWidth={1.75} />}
-          tooltip="Debugger"
           onClick={openLogDrawer}
         />
       </FloatButton.Group>
@@ -770,7 +768,7 @@ function App() {
         onCancel={closeSettingsModal}
         footer={null}
         centered
-        width={520}
+        width={"80%"}
       >
         <Space direction="vertical" size="large" style={{ width: "100%" }}>
           <Space direction="vertical" size="small" style={{ width: "100%" }}>
@@ -790,7 +788,7 @@ function App() {
               </Space>
               <Space wrap>
                 <Button
-                  icon={<RefreshCcw size={18} strokeWidth={1.75} />}
+                  icon={<RedoOutlined />}
                   onClick={refreshBinaryStatuses}
                   disabled={checkingYt || checkingFf || isDownloading}
                   loading={checkingYt || checkingFf}
@@ -800,7 +798,7 @@ function App() {
                 <Button
                   type="primary"
                   ghost
-                  icon={<Download size={18} strokeWidth={1.75} />}
+                  icon={<DownloadOutlined />}
                   onClick={installYtDlp}
                   loading={installing}
                 >

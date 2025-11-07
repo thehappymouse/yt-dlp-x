@@ -1,0 +1,51 @@
+name: Build Windows EXE (Tauri 2)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Tauri App for Windows
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 安装 Node（根据你的项目版本选择）
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: yarn
+
+      # 安装 Rust（含 Tauri 依赖）
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      # 安装 WebView2 运行库（Tauri Windows 依赖）
+      - name: Install WebView2 Runtime
+        run: |
+          powershell -Command "Invoke-WebRequest https://go.microsoft.com/fwlink/p/?LinkId=2124703 -OutFile MicrosoftEdgeWebview2Setup.exe"
+          .\MicrosoftEdgeWebview2Setup.exe /silent /install
+
+      # 安装依赖
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      # 构建前端
+      - name: Build frontend
+        run: yarn build
+
+      # 构建 tauri
+      - name: Build Tauri app
+        run: yarn tauri build
+
+      # 输出打包结果
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-tauri-build
+          path: src-tauri/target/release/bundle/

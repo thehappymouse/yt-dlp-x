@@ -397,10 +397,32 @@ function App() {
     });
   }, []);
 
-  const isYoutubeUrl = useMemo(() => {
+  const cookieSiteLabel = useMemo(() => {
     const value = url.trim().toLowerCase();
-    return value.includes("youtube.com") || value.includes("youtu.be");
+    if (!value) {
+      return null;
+    }
+
+    if (value.includes("youtube.com") || value.includes("youtu.be")) {
+      return "YouTube";
+    }
+
+    if (
+      value.includes("bilibili.com") ||
+      value.includes("b23.tv") ||
+      value.includes("bilivideo.com") ||
+      value.includes("acg.tv")
+    ) {
+      return "Bilibili";
+    }
+
+    return null;
   }, [url]);
+
+  const requiresBrowserCookies = useMemo(
+    () => Boolean(cookieSiteLabel),
+    [cookieSiteLabel]
+  );
 
   const downloadButtonLabel = useMemo(() => {
     if (isDownloading) {
@@ -590,13 +612,13 @@ function App() {
                   </Space.Compact>
                 </Form.Item>
 
-                {(isYoutubeUrl || errorMessage || successMessage) && (
+                {(requiresBrowserCookies || errorMessage || successMessage) && (
                   <Space direction="vertical" style={{ width: "100%" }}>
-                    {isYoutubeUrl && (
+                    {requiresBrowserCookies && (
                       <Alert
                         type="info"
                         showIcon
-                        message="已检测到 YouTube 链接，将使用所选浏览器的 cookies。"
+                        message={`已检测到 ${cookieSiteLabel ?? "目标站点"} 链接，将使用所选浏览器的 cookies。`}
                       />
                     )}
                     {errorMessage && (

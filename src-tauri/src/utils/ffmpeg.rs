@@ -141,7 +141,7 @@ fn extract_ffmpeg_from_zip(
     target_path: PathBuf,
     binary_name: &str,
 ) -> Result<(), String> {
-    use std::io::{Cursor, Read, Write};
+    use std::io::{Cursor};
 
     let reader = Cursor::new(bytes);
     let mut archive =
@@ -174,7 +174,7 @@ fn extract_ffmpeg_from_zip(
 }
 
 fn extract_ffmpeg_from_tar_xz(bytes: Vec<u8>, target_path: PathBuf) -> Result<(), String> {
-    use std::io::{Cursor, Read, Write};
+    use std::io::{Cursor};
 
     let cursor = Cursor::new(bytes);
     let decompressor = xz2::read::XzDecoder::new(cursor);

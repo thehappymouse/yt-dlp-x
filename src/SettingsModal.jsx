@@ -1,14 +1,30 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { DownloadOutlined, RedoOutlined } from "@ant-design/icons";
-import { Alert, Button, Flex, Modal, Space, Tag, Typography } from "antd";
+import { Alert, Button, Flex, Modal, Segmented, Space, Tag, Typography } from "antd";
 import { LuCircleAlert, LuCircleCheck, LuLoaderCircle } from "react-icons/lu";
 import { extractErrorMessage } from "./utils/errors";
 
 const { Text } = Typography;
 
+const VIDEO_QUALITY_OPTIONS = [
+  { label: "低画质", value: "low" },
+  { label: "中画质", value: "medium" },
+  { label: "最高画质", value: "highest" },
+];
+
+const VIDEO_QUALITY_HINT =
+  "低画质：优先尝试 480P 及以下；中画质：优先获取 1080P；最高画质：尝试最高可用画质（Bilibili 大会员可解锁 4K）。";
+
 const SettingsModal = forwardRef(function SettingsModal(
-  { open, onClose, isDownloading, onStatusChange },
+  {
+    open,
+    onClose,
+    isDownloading,
+    onStatusChange,
+    videoQuality = "highest",
+    onVideoQualityChange,
+  },
   ref
 ) {
   const [ytStatus, setYtStatus] = useState({
@@ -69,6 +85,19 @@ const SettingsModal = forwardRef(function SettingsModal(
     refreshYtStatus();
     refreshFfmpegStatus();
   }, [refreshYtStatus, refreshFfmpegStatus]);
+
+  const handleVideoQualityChange = useCallback(
+    (value) => {
+      if (typeof value !== "string") {
+        return;
+      }
+
+      if (onVideoQualityChange) {
+        onVideoQualityChange(value);
+      }
+    },
+    [onVideoQualityChange]
+  );
 
   useImperativeHandle(
     ref,
@@ -238,7 +267,7 @@ const SettingsModal = forwardRef(function SettingsModal(
       width="70%"
       destroyOnClose={false}
     >
-      <Space direction="vertical" size="large" style={{ height: 300, width: "100%" }}>
+      <Space direction="vertical" size="large" style={{ width: "100%" }}>
         <Space direction="vertical" size="small" style={{ width: "100%" }}>
           <Flex align="center" justify="space-between" wrap="wrap" gap="small">
             <Space align="center" size="small" wrap>
@@ -282,6 +311,17 @@ const SettingsModal = forwardRef(function SettingsModal(
           </Flex>
           <Text type="secondary">{ytStatusHelperText}</Text>
           <Text type="secondary">{ffStatusHelperText}</Text>
+        </Space>
+        <Space direction="vertical" size="small" style={{ width: "100%" }}>
+          <Text strong>默认视频画质</Text>
+          <Segmented
+            block
+            options={VIDEO_QUALITY_OPTIONS}
+            value={videoQuality}
+            onChange={handleVideoQualityChange}
+            disabled={isDownloading}
+          />
+          <Text type="secondary">{VIDEO_QUALITY_HINT}</Text>
         </Space>
         {feedback?.message ? (
           <Alert type={feedback.type} showIcon message={feedback.message} />

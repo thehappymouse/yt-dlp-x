@@ -44,6 +44,8 @@ struct DownloadRequest {
     browser: Option<String>,
     output_dir: Option<String>,
     session_id: Option<String>,
+    #[serde(default)]
+    quality: VideoQuality,
 }
 
 #[derive(Deserialize)]
@@ -51,6 +53,20 @@ struct DownloadRequest {
 enum DownloadMode {
     Audio,
     Video,
+}
+
+#[derive(Debug, Deserialize, Clone, Copy)]
+#[serde(rename_all = "lowercase")]
+enum VideoQuality {
+    Low,
+    Medium,
+    Highest,
+}
+
+impl Default for VideoQuality {
+    fn default() -> Self {
+        VideoQuality::Highest
+    }
 }
 
 #[derive(Serialize)]
@@ -129,6 +145,7 @@ async fn download_media(
         browser,
         output_dir,
         session_id,
+        quality,
     } = request;
 
     let url = url.trim().to_string();
@@ -195,7 +212,7 @@ async fn download_media(
         }
         DownloadMode::Video => {
             args.push("-f".into());
-            args.push("bv*+ba/b".into());
+            args.push(video_format_for_quality(quality, &url));
             args.push("--merge-output-format".into());
             args.push("mp4".into());
             ffmpeg::detect_existing()?.map(|(path, _)| path)
@@ -283,6 +300,28 @@ async fn download_media(
         stderr,
         output_dir: path_to_string(&output_dir),
     })
+}
+
+fn video_format_for_quality(quality: VideoQuality, url: &str) -> String {
+    match quality {
+        VideoQuality::Low => "bv*[height<=480]+ba/b[height<=480]/bv*[height<=720]+ba/b[height<=720]/worst".into(),
+        VideoQuality::Medium => "bv*[height<=1080]+ba/b[height<=1080]/bv*[height<=720]+ba/b[height<=720]/b".into(),
+        VideoQuality::Highest => {
+            if is_bilibili_url(url) {
+                "bv*[height>=2160]+ba/bv*[height>=1080]+ba/bv*+ba/b".into()
+            } else {
+                "bv*+ba/b".into()
+            }
+        }
+    }
+}
+
+fn is_bilibili_url(url: &str) -> bool {
+    let lower = url.to_ascii_lowercase();
+    lower.contains("bilibili.com")
+        || lower.contains("b23.tv")
+        || lower.contains("bilivideo.com")
+        || lower.contains("acg.tv")
 }
 
 struct ProgressInfo {

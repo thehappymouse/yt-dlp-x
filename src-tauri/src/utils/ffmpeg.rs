@@ -10,12 +10,12 @@ pub enum BinarySource {
 }
 
 pub fn detect_existing() -> Result<Option<(PathBuf, BinarySource)>, String> {
-    if let Some(path) = detect_system_binary() {
-        return Ok(Some((path, BinarySource::System)));
-    }
-
     if let Some(path) = detect_bundled_binary()? {
         return Ok(Some((path, BinarySource::Bundled)));
+    }
+
+    if let Some(path) = detect_system_binary() {
+        return Ok(Some((path, BinarySource::System)));
     }
 
     Ok(None)

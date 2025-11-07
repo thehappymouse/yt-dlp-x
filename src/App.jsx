@@ -46,10 +46,17 @@ const BROWSER_OPTIONS = [
 
 const DEFAULT_BROWSER = "chrome";
 
+const VIDEO_QUALITY_LABELS = {
+  low: "低画质",
+  medium: "中画质",
+  highest: "最高画质",
+};
+
 function App() {
   const [url, setUrl] = useState("");
   const [browser, setBrowser] = useState(DEFAULT_BROWSER);
   const [downloadType, setDownloadType] = useState("video");
+  const [videoQuality, setVideoQuality] = useState("highest");
   const [outputDir, setOutputDir] = useState("");
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(null);
@@ -276,6 +283,7 @@ function App() {
           browser,
           outputDir,
           sessionId,
+          quality: videoQuality,
         },
       });
 
@@ -353,6 +361,21 @@ function App() {
       prev === isAtBottom ? prev : isAtBottom
     );
   };
+
+  const handleVideoQualityUpdate = useCallback(
+    (nextQuality) => {
+      if (typeof nextQuality !== "string") {
+        return;
+      }
+
+      if (!VIDEO_QUALITY_LABELS[nextQuality]) {
+        return;
+      }
+
+      setVideoQuality(nextQuality);
+    },
+    [setVideoQuality]
+  );
 
   const handleSettingsStatusChange = useCallback((nextStatus) => {
     setSettingsStatusSnapshot((prev) => {
@@ -513,7 +536,9 @@ function App() {
                     className="download-type-segmented"
                     options={[
                       {
-                        label: "视频 (最佳画质)",
+                        label: `视频（${
+                          VIDEO_QUALITY_LABELS[videoQuality] ?? "最高画质"
+                        }）`,
                         value: "video",
                         icon: <LuSquarePlay size={18} strokeWidth={2} />,
                       },
@@ -653,6 +678,8 @@ function App() {
         onClose={closeSettingsModal}
         isDownloading={isDownloading}
         onStatusChange={handleSettingsStatusChange}
+        videoQuality={videoQuality}
+        onVideoQualityChange={handleVideoQualityUpdate}
       />
 
       <Drawer

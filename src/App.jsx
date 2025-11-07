@@ -22,21 +22,18 @@ import {
 } from "antd";
 import { RedoOutlined, DownloadOutlined } from "@ant-design/icons";
 import {
-  AlertCircle,
-  CheckCircle,
-  Download,
-  SquarePlay,
-  Folder,
-  FolderOpen,
-  Info,
-  Loader2,
-  Menu,
-  Headphones,
-  RefreshCcw,
-  Settings,
-  Video,
-  SquareChevronRight,
-} from "lucide-react";
+  LuAlertCircle,
+  LuCheckCircle,
+  LuSquarePlay,
+  LuFolder,
+  LuFolderOpen,
+  LuInfo,
+  LuLoader2,
+  LuMenu,
+  LuHeadphones,
+  LuSettings,
+  LuSquareChevronRight,
+} from "react-icons/lu";
 import About from "./About";
 import { APP_VERSION } from "./version";
 import "./App.css";
@@ -556,11 +553,11 @@ function App() {
     : "warning";
 
   const statusTagIcon = checkingYt ? (
-    <Loader2 className="status-icon icon-spin" size={14} strokeWidth={2.75} />
+    <LuLoader2 className="status-icon icon-spin" size={14} strokeWidth={2.75} />
   ) : ytStatus.installed ? (
-    <CheckCircle className="status-icon" size={14} strokeWidth={2.5} />
+    <LuCheckCircle className="status-icon" size={14} strokeWidth={2.5} />
   ) : (
-    <AlertCircle className="status-icon" size={14} strokeWidth={2.5} />
+    <LuAlertCircle className="status-icon" size={14} strokeWidth={2.5} />
   );
 
   const ffSourceLabel =
@@ -583,11 +580,11 @@ function App() {
     : "warning";
 
   const ffStatusTagIcon = checkingFf ? (
-    <Loader2 className="status-icon icon-spin" size={14} strokeWidth={2.75} />
+    <LuLoader2 className="status-icon icon-spin" size={14} strokeWidth={2.75} />
   ) : ffStatus.installed ? (
-    <CheckCircle className="status-icon" size={14} strokeWidth={2.5} />
+    <LuCheckCircle className="status-icon" size={14} strokeWidth={2.5} />
   ) : (
-    <AlertCircle className="status-icon" size={14} strokeWidth={2.5} />
+    <LuAlertCircle className="status-icon" size={14} strokeWidth={2.5} />
   );
 
   const ytStatusHelperText = checkingYt
@@ -659,12 +656,12 @@ function App() {
                       {
                         label: "视频 (最佳画质)",
                         value: "video",
-                        icon: <SquarePlay size={18} strokeWidth={2} />,
+                        icon: <LuSquarePlay size={18} strokeWidth={2} />,
                       },
                       {
                         label: "纯音频 (MP3)",
                         value: "audio",
-                        icon: <Headphones size={18} strokeWidth={2} />,
+                        icon: <LuHeadphones size={18} strokeWidth={2} />,
                       },
                     ]}
                     value={downloadType}
@@ -693,13 +690,13 @@ function App() {
                       placeholder="下载保存目录"
                     />
                     <Button
-                      icon={<Folder size={18} strokeWidth={1.75} />}
+                      icon={<LuFolder size={18} strokeWidth={1.75} />}
                       onClick={handleSelectOutputDir}
                     >
                       更换
                     </Button>
                     <Button
-                      icon={<FolderOpen size={18} strokeWidth={1.75} />}
+                      icon={<LuFolderOpen size={18} strokeWidth={1.75} />}
                       onClick={handleOpenDir}
                       type="link"
                       disabled={!outputDir.trim()}
@@ -767,7 +764,7 @@ function App() {
       <FloatButton.Group
         trigger="click"
         type="primary"
-        icon={<Menu size={20} strokeWidth={1.75} />}
+        icon={<LuMenu size={20} strokeWidth={1.75} />}
         shape="square"
         badge={
           showYtDlpWarningBadge ? { dot: true, color: "#ff4d4f" } : undefined
@@ -775,18 +772,18 @@ function App() {
         style={{ right: 24, bottom: 24 }}
       >
         <FloatButton
-          icon={<Info size={20} strokeWidth={1.75} />}
+          icon={<LuInfo size={20} strokeWidth={1.75} />}
           onClick={openAboutDialog}
         />
         <FloatButton
-          icon={<Settings size={20} strokeWidth={1.75} />}
+          icon={<LuSettings size={20} strokeWidth={1.75} />}
           onClick={openSettingsModal}
           badge={
             showYtDlpWarningBadge ? { dot: true, color: "#ff4d4f" } : undefined
           }
         />
         <FloatButton
-          icon={<SquareChevronRight size={20} strokeWidth={1.75} />}
+          icon={<LuSquareChevronRight size={20} strokeWidth={1.75} />}
           onClick={openLogDrawer}
         />
       </FloatButton.Group>

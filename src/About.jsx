@@ -1,5 +1,5 @@
 import { Button, List, Modal, Space, Tag, Typography } from "antd";
-import { Github, Mail } from "lucide-react";
+import { LuGithub, LuMail } from "react-icons/lu";
 import logo from "./assets/logo.png";
 import { APP_VERSION } from "./version";
 
@@ -43,14 +43,14 @@ const About = ({ open, onClose }) => (
           href="https://github.com/thehappymouse/yt-dlp-x"
           target="_blank"
           rel="noreferrer"
-          icon={<Github size={18} strokeWidth={1.75} />}
+          icon={<LuGithub size={18} strokeWidth={1.75} />}
         >
           GitHub (https://github.com/thehappymouse/yt-dlp-x)
         </Button>
         <Button
           type="link"
           href="mailto:thehappymouse@gmail.com"
-          icon={<Mail size={18} strokeWidth={1.75} />}
+          icon={<LuMail size={18} strokeWidth={1.75} />}
         >
           thehappymouse@gmail.com
         </Button>

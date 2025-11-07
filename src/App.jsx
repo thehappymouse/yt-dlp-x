@@ -794,9 +794,9 @@ function App() {
         onCancel={closeSettingsModal}
         footer={null}
         centered
-        width={"80%"}
+        width={"70%"}
       >
-        <Space direction="vertical" size="large" style={{ width: "100%" }}>
+        <Space direction="vertical" size="large" style={{ height: 300, width: "100%" }}>
           <Space direction="vertical" size="small" style={{ width: "100%" }}>
             <Flex
               align="center"

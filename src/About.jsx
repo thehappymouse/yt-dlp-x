@@ -40,6 +40,15 @@ const About = ({ open, onClose }) => (
       <Space direction="vertical" size={4}>
         <Button
           type="link"
+          href="https://github.com/yt-dlp/yt-dlp"
+          target="_blank"
+          rel="noreferrer"
+          icon={<LuGithub size={18} strokeWidth={1.75} />}
+        >
+          Core (https://github.com/yt-dlp/yt-dlp)
+        </Button>
+                <Button
+          type="link"
           href="https://github.com/thehappymouse/yt-dlp-x"
           target="_blank"
           rel="noreferrer"

@@ -85,9 +85,11 @@ function App() {
   const [ffStatus, setFfStatus] = useState({
     installed: false,
     path: "",
+    source: "",
   });
   const [checkingFf, setCheckingFf] = useState(true);
-  const [installing, setInstalling] = useState(false);
+  const [isInstallingYt, setIsInstallingYt] = useState(false);
+  const [isInstallingFf, setIsInstallingFf] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(null);
   const [logOutput, setLogOutput] = useState("");
@@ -283,6 +285,7 @@ function App() {
       setFfStatus({
         installed: Boolean(status.installed),
         path: status.path ?? "",
+        source: status.source ?? "",
       });
     } catch (err) {
       setErrorMessage(`检测 ffmpeg 失败：${extractErrorMessage(err)}`);
@@ -308,7 +311,7 @@ function App() {
   };
 
   const installYtDlp = async () => {
-    setInstalling(true);
+    setIsInstallingYt(true);
     setErrorMessage("");
     setSuccessMessage("");
     try {
@@ -322,7 +325,26 @@ function App() {
     } catch (err) {
       setErrorMessage(`安装 yt-dlp 失败：${extractErrorMessage(err)}`);
     } finally {
-      setInstalling(false);
+      setIsInstallingYt(false);
+    }
+  };
+
+  const installFfmpeg = async () => {
+    setIsInstallingFf(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+    try {
+      const status = await invoke("install_ffmpeg");
+      setFfStatus({
+        installed: Boolean(status.installed),
+        path: status.path ?? "",
+        source: status.source ?? "",
+      });
+      setSuccessMessage("ffmpeg 已下载并可用。");
+    } catch (err) {
+      setErrorMessage(`安装 ffmpeg 失败：${extractErrorMessage(err)}`);
+    } finally {
+      setIsInstallingFf(false);
     }
   };
 
@@ -541,10 +563,17 @@ function App() {
     <AlertCircle className="status-icon" size={14} strokeWidth={2.5} />
   );
 
+  const ffSourceLabel =
+    ffStatus.source === "system"
+      ? "系统版本"
+      : ffStatus.source === "bundled"
+      ? "内置版本"
+      : "";
+
   const ffStatusLabel = checkingFf
     ? "正在检测 ffmpeg..."
     : ffStatus.installed
-    ? "ffmpeg 已就绪"
+    ? `ffmpeg 已就绪${ffSourceLabel ? `（${ffSourceLabel}）` : ""}`
     : "尚未检测到 ffmpeg";
 
   const ffStatusTagColor = checkingFf
@@ -570,8 +599,8 @@ function App() {
   const ffStatusHelperText = checkingFf
     ? "正在检测系统中的 ffmpeg..."
     : ffStatus.path
-    ? `检测到的 ffmpeg 路径：${ffStatus.path}`
-    : "未检测到 ffmpeg，请先在系统中安装，以支持音频转换与封面嵌入。";
+    ? `当前使用的 ffmpeg 路径：${ffStatus.path}`
+    : "未检测到 ffmpeg，请先通过下方按钮安装或在系统中安装，以支持音频转换与封面嵌入。";
 
   const showYtDlpWarningBadge = !checkingYt && !ytStatus.installed;
 
@@ -790,7 +819,13 @@ function App() {
                 <Button
                   icon={<RedoOutlined />}
                   onClick={refreshBinaryStatuses}
-                  disabled={checkingYt || checkingFf || isDownloading}
+                  disabled={
+                    checkingYt ||
+                    checkingFf ||
+                    isDownloading ||
+                    isInstallingYt ||
+                    isInstallingFf
+                  }
                   loading={checkingYt || checkingFf}
                 >
                   重新检测
@@ -800,9 +835,20 @@ function App() {
                   ghost
                   icon={<DownloadOutlined />}
                   onClick={installYtDlp}
-                  loading={installing}
+                  loading={isInstallingYt}
+                  disabled={isInstallingFf || isDownloading}
                 >
                   安装 / 更新 yt-dlp
+                </Button>
+                <Button
+                  type="primary"
+                  ghost
+                  icon={<DownloadOutlined />}
+                  onClick={installFfmpeg}
+                  loading={isInstallingFf}
+                  disabled={isInstallingYt || isDownloading}
+                >
+                  安装 / 更新 ffmpeg
                 </Button>
               </Space>
             </Flex>

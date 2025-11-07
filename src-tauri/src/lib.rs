@@ -15,8 +15,10 @@ use tokio::{
     process::Command,
     sync::Mutex,
 };
-use utils::yt_dlp::{self, BinarySource};
-use which::which;
+use utils::{
+    ffmpeg::{self, BinarySource as FfmpegBinarySource},
+    yt_dlp::{self, BinarySource as YtDlpBinarySource},
+};
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -31,6 +33,7 @@ struct YtDlpStatus {
 struct FfmpegStatus {
     installed: bool,
     path: Option<String>,
+    source: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -65,7 +68,7 @@ async fn check_yt_dlp() -> Result<YtDlpStatus, String> {
         Some((path, source)) => YtDlpStatus {
             installed: true,
             path: Some(path_to_string(&path)),
-            source: Some(source_label(source)),
+            source: Some(yt_dlp_source_label(source)),
         },
         None => YtDlpStatus {
             installed: false,
@@ -83,20 +86,22 @@ async fn install_yt_dlp() -> Result<YtDlpStatus, String> {
     Ok(YtDlpStatus {
         installed: true,
         path: Some(path_to_string(&path)),
-        source: Some(source_label(BinarySource::Bundled)),
+        source: Some(yt_dlp_source_label(YtDlpBinarySource::Bundled)),
     })
 }
 
 #[tauri::command]
 async fn check_ffmpeg() -> Result<FfmpegStatus, String> {
-    let status = match detect_ffmpeg_path() {
-        Some(path) => FfmpegStatus {
+    let status = match ffmpeg::detect_existing()? {
+        Some((path, source)) => FfmpegStatus {
             installed: true,
             path: Some(path_to_string(&path)),
+            source: Some(ffmpeg_source_label(source)),
         },
         None => FfmpegStatus {
             installed: false,
             path: None,
+            source: None,
         },
     };
 
@@ -104,7 +109,20 @@ async fn check_ffmpeg() -> Result<FfmpegStatus, String> {
 }
 
 #[tauri::command]
-async fn download_media(window: Window, request: DownloadRequest) -> Result<DownloadResponse, String> {
+async fn install_ffmpeg() -> Result<FfmpegStatus, String> {
+    let path = ffmpeg::install_latest().await?;
+    Ok(FfmpegStatus {
+        installed: true,
+        path: Some(path_to_string(&path)),
+        source: Some(ffmpeg_source_label(FfmpegBinarySource::Bundled)),
+    })
+}
+
+#[tauri::command]
+async fn download_media(
+    window: Window,
+    request: DownloadRequest,
+) -> Result<DownloadResponse, String> {
     let DownloadRequest {
         url,
         mode,
@@ -164,7 +182,7 @@ async fn download_media(window: Window, request: DownloadRequest) -> Result<Down
 
     let ffmpeg_path = match mode {
         DownloadMode::Audio => {
-            let path = ensure_ffmpeg_available()?;
+            let (path, _) = ffmpeg::ensure_available()?;
             args.push("-f".into());
             args.push("bestaudio/best".into());
             args.push("-x".into());
@@ -180,7 +198,7 @@ async fn download_media(window: Window, request: DownloadRequest) -> Result<Down
             args.push("bv*+ba/b".into());
             args.push("--merge-output-format".into());
             args.push("mp4".into());
-            detect_ffmpeg_path()
+            ffmpeg::detect_existing()?.map(|(path, _)| path)
         }
     };
 
@@ -438,10 +456,9 @@ async fn open_directory(path: String) -> Result<(), String> {
 
     let target = canonical_path.clone();
 
-    let open_result =
-        tauri::async_runtime::spawn_blocking(move || open_in_file_manager(&target))
-            .await
-            .map_err(|err| format!("打开目录失败: {err}"))?;
+    let open_result = tauri::async_runtime::spawn_blocking(move || open_in_file_manager(&target))
+        .await
+        .map_err(|err| format!("打开目录失败: {err}"))?;
 
     open_result?;
 
@@ -540,33 +557,21 @@ fn exit_status_message(status: std::process::ExitStatus) -> String {
         .unwrap_or_else(|| "未知".into())
 }
 
-fn ensure_ffmpeg_available() -> Result<PathBuf, String> {
-    detect_ffmpeg_path().ok_or_else(|| "未检测到系统 ffmpeg，请先安装后再试，以便下载音频并嵌入封面。".into())
-}
-
-fn detect_ffmpeg_path() -> Option<PathBuf> {
-    if let Ok(path) = which("ffmpeg") {
-        return Some(path);
-    }
-
-    #[cfg(target_os = "windows")]
-    {
-        if let Ok(path) = which("ffmpeg.exe") {
-            return Some(path);
-        }
-    }
-
-    utils::path_search::locate_macos_binary(&["ffmpeg"])
-}
-
 fn path_to_string(path: &PathBuf) -> String {
     path.to_string_lossy().to_string()
 }
 
-fn source_label(source: BinarySource) -> String {
+fn yt_dlp_source_label(source: YtDlpBinarySource) -> String {
     match source {
-        BinarySource::System => "system".into(),
-        BinarySource::Bundled => "bundled".into(),
+        YtDlpBinarySource::System => "system".into(),
+        YtDlpBinarySource::Bundled => "bundled".into(),
+    }
+}
+
+fn ffmpeg_source_label(source: FfmpegBinarySource) -> String {
+    match source {
+        FfmpegBinarySource::System => "system".into(),
+        FfmpegBinarySource::Bundled => "bundled".into(),
     }
 }
 
@@ -579,6 +584,7 @@ pub fn run() {
             check_yt_dlp,
             check_ffmpeg,
             install_yt_dlp,
+            install_ffmpeg,
             download_media,
             get_default_download_dir,
             open_directory

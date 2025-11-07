@@ -123,10 +123,7 @@ async fn download_to(target_path: &Path) -> Result<(), String> {
         .map_err(|err| format!("下载 yt-dlp 失败: {err}"))?;
 
     if !response.status().is_success() {
-        return Err(format!(
-            "下载 yt-dlp 失败，状态码: {}",
-            response.status()
-        ));
+        return Err(format!("下载 yt-dlp 失败，状态码: {}", response.status()));
     }
 
     let bytes = response

@@ -265,7 +265,7 @@ const SettingsModal = forwardRef(function SettingsModal(
       footer={null}
       centered
       width="70%"
-      destroyOnClose={false}
+      destroyOnHidden={false}
     >
       <Space direction="vertical" size="large" style={{ width: "100%" }}>
         <Space direction="vertical" size="small" style={{ width: "100%" }}>

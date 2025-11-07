@@ -34,7 +34,7 @@ import {
   SiTiktok,
   SiInstagram,
   SiVimeo,
-  SiTwitter,
+  SiX,
   SiFacebook,
   SiSoundcloud,
 } from "react-icons/si";
@@ -74,7 +74,7 @@ const SUPPORTED_SITES = [
   { label: "TikTok", Icon: SiTiktok, color: "#000000" },
   { label: "Instagram", Icon: SiInstagram, color: "#E4405F" },
   { label: "Vimeo", Icon: SiVimeo, color: "#1AB7EA" },
-  { label: "Twitter", Icon: SiTwitter, color: "#1DA1F2" },
+  { label: "Twitter", Icon: SiX, color: "#1DA1F2" },
   { label: "Facebook", Icon: SiFacebook, color: "#1877F2" },
   { label: "SoundCloud", Icon: SiSoundcloud, color: "#FF5500" },
 ];
@@ -549,7 +549,6 @@ function App() {
                   </div>
                 </Space>
                 <Space direction="vertical" size={8} align="center">
-                  <Text strong>支持下载的网站</Text>
                   <div className="supported-sites-list">
                     {SUPPORTED_SITES.map(({ label, Icon, color }) => (
                       <Tooltip key={label} title={label}>

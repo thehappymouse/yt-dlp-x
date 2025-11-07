@@ -25,6 +25,44 @@ $ yarn tauri build
 
 > 首次运行若缺少 `yt-dlp`，应用会自动下载对应平台的可执行文件并保存到应用数据目录。
 
+## 发布构建
+
+Tauri 构建产物默认输出到 `src-tauri/target/release/bundle` 目录。可直接执行 `yarn release` 生成当前平台的默认产物；下列命令则需在目标平台执行，或在配置好交叉编译工具链的环境中运行，以构建特定安装包：
+
+### Windows
+
+```bash
+yarn release:windows
+```
+
+会生成 `.msi` 安装包与 `.nsis.zip` 安装器，可直接分发。
+
+### macOS
+
+```bash
+# Apple Silicon
+yarn release:macos
+
+# 如需打包通用二进制，请在安装额外 target 后执行
+# yarn release:macos:universal
+```
+
+默认输出 `.app` 与 `.dmg`。由于尚未进行开发者签名，首次运行可能会提示应用已损坏，可执行：
+
+```bash
+xattr -cr "/Applications/yt-dlp-x.app"
+```
+
+将路径替换为实际存放位置，以移除隔离属性后即可正常启动。
+
+### Linux
+
+```bash
+yarn release:linux
+```
+
+会生成 `.AppImage`、`.deb` 与 `.rpm` 等发行包。
+
 ## 目录结构
 
 - `src/` — React 前端界面

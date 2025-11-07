@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
@@ -8,34 +8,29 @@ import {
   Card,
   ConfigProvider,
   Drawer,
-  Flex,
   FloatButton,
   Form,
   Input,
-  Modal,
   Progress,
   Select,
   Segmented,
   Space,
-  Tag,
   Typography,
 } from "antd";
-import { RedoOutlined, DownloadOutlined } from "@ant-design/icons";
 import {
-  LuCircleAlert,
-  LuCircleCheck,
   LuSquarePlay,
   LuFolder,
   LuFolderOpen,
   LuInfo,
-  LuLoaderCircle,
   LuMenu,
   LuHeadphones,
   LuSettings,
   LuSquareChevronRight,
 } from "react-icons/lu";
 import About from "./About";
+import SettingsModal from "./SettingsModal";
 import { APP_VERSION } from "./version";
+import { extractErrorMessage } from "./utils/errors";
 import "./App.css";
 import logo from "./assets/logo.png";
 
@@ -51,42 +46,11 @@ const BROWSER_OPTIONS = [
 
 const DEFAULT_BROWSER = "chrome";
 
-const extractErrorMessage = (error) => {
-  if (!error) return "未知错误";
-  if (typeof error === "string") return error;
-  if (typeof error === "object") {
-    if ("message" in error && error.message) {
-      return error.message;
-    }
-    try {
-      return JSON.stringify(error);
-    } catch (serializationError) {
-      return String(error);
-    }
-  }
-
-  return String(error);
-};
-
 function App() {
   const [url, setUrl] = useState("");
   const [browser, setBrowser] = useState(DEFAULT_BROWSER);
   const [downloadType, setDownloadType] = useState("video");
   const [outputDir, setOutputDir] = useState("");
-  const [ytStatus, setYtStatus] = useState({
-    installed: false,
-    path: "",
-    source: "",
-  });
-  const [checkingYt, setCheckingYt] = useState(true);
-  const [ffStatus, setFfStatus] = useState({
-    installed: false,
-    path: "",
-    source: "",
-  });
-  const [checkingFf, setCheckingFf] = useState(true);
-  const [isInstallingYt, setIsInstallingYt] = useState(false);
-  const [isInstallingFf, setIsInstallingFf] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(null);
   const [logOutput, setLogOutput] = useState("");
@@ -95,6 +59,9 @@ function App() {
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isLogDrawerOpen, setIsLogDrawerOpen] = useState(false);
+
+  const settingsModalRef = useRef(null);
+  const [settingsStatusSnapshot, setSettingsStatusSnapshot] = useState(null);
 
   const closeAboutDialog = () => setIsAboutDialogOpen(false);
   const openAboutDialog = () => setIsAboutDialogOpen(true);
@@ -109,8 +76,6 @@ function App() {
   const [isLogAutoScrollEnabled, setIsLogAutoScrollEnabled] = useState(true);
 
   useEffect(() => {
-    refreshYtStatus();
-    refreshFfmpegStatus();
     loadDefaultOutputDir();
   }, []);
 
@@ -259,38 +224,6 @@ function App() {
     container.scrollTop = container.scrollHeight;
   }, [logOutput, isLogAutoScrollEnabled]);
 
-  const refreshYtStatus = async () => {
-    try {
-      setCheckingYt(true);
-      const status = await invoke("check_yt_dlp");
-      setYtStatus({
-        installed: Boolean(status.installed),
-        path: status.path ?? "",
-        source: status.source ?? "",
-      });
-    } catch (err) {
-      setErrorMessage(`检测 yt-dlp 失败：${extractErrorMessage(err)}`);
-    } finally {
-      setCheckingYt(false);
-    }
-  };
-
-  const refreshFfmpegStatus = async () => {
-    try {
-      setCheckingFf(true);
-      const status = await invoke("check_ffmpeg");
-      setFfStatus({
-        installed: Boolean(status.installed),
-        path: status.path ?? "",
-        source: status.source ?? "",
-      });
-    } catch (err) {
-      setErrorMessage(`检测 ffmpeg 失败：${extractErrorMessage(err)}`);
-    } finally {
-      setCheckingFf(false);
-    }
-  };
-
   const loadDefaultOutputDir = async () => {
     try {
       const dir = await invoke("get_default_download_dir");
@@ -299,49 +232,6 @@ function App() {
       }
     } catch (err) {
       console.warn("获取默认下载目录失败", err);
-    }
-  };
-
-  const refreshBinaryStatuses = () => {
-    refreshYtStatus();
-    refreshFfmpegStatus();
-  };
-
-  const installYtDlp = async () => {
-    setIsInstallingYt(true);
-    setErrorMessage("");
-    setSuccessMessage("");
-    try {
-      const status = await invoke("install_yt_dlp");
-      setYtStatus({
-        installed: Boolean(status.installed),
-        path: status.path ?? "",
-        source: status.source ?? "",
-      });
-      setSuccessMessage("yt-dlp 已下载并可用。");
-    } catch (err) {
-      setErrorMessage(`安装 yt-dlp 失败：${extractErrorMessage(err)}`);
-    } finally {
-      setIsInstallingYt(false);
-    }
-  };
-
-  const installFfmpeg = async () => {
-    setIsInstallingFf(true);
-    setErrorMessage("");
-    setSuccessMessage("");
-    try {
-      const status = await invoke("install_ffmpeg");
-      setFfStatus({
-        installed: Boolean(status.installed),
-        path: status.path ?? "",
-        source: status.source ?? "",
-      });
-      setSuccessMessage("ffmpeg 已下载并可用。");
-    } catch (err) {
-      setErrorMessage(`安装 ffmpeg 失败：${extractErrorMessage(err)}`);
-    } finally {
-      setIsInstallingFf(false);
     }
   };
 
@@ -410,7 +300,7 @@ function App() {
     } finally {
       setIsDownloading(false);
       setDownloadProgress(null);
-      refreshBinaryStatuses();
+      settingsModalRef.current?.refreshStatuses?.();
     }
   };
 
@@ -463,6 +353,26 @@ function App() {
       prev === isAtBottom ? prev : isAtBottom
     );
   };
+
+  const handleSettingsStatusChange = useCallback((nextStatus) => {
+    setSettingsStatusSnapshot((prev) => {
+      if (!nextStatus) {
+        return null;
+      }
+
+      if (
+        prev &&
+        prev.ytInstalled === nextStatus.ytInstalled &&
+        prev.ffInstalled === nextStatus.ffInstalled &&
+        prev.checkingYt === nextStatus.checkingYt &&
+        prev.checkingFf === nextStatus.checkingFf
+      ) {
+        return prev;
+      }
+
+      return nextStatus;
+    });
+  }, []);
 
   const isYoutubeUrl = useMemo(() => {
     const value = url.trim().toLowerCase();
@@ -538,68 +448,17 @@ function App() {
     return "准备中...";
   }, [downloadProgress]);
 
-  const ytStatusLabel = checkingYt
-    ? "正在检测 yt-dlp..."
-    : ytStatus.installed
-    ? `yt-dlp 已就绪（${
-        ytStatus.source === "system" ? "系统版本" : "内置版本"
-      }）`
-    : "尚未检测到 yt-dlp";
+  const showYtDlpWarningBadge = useMemo(() => {
+    if (!settingsStatusSnapshot) {
+      return false;
+    }
 
-  const statusTagColor = checkingYt
-    ? "processing"
-    : ytStatus.installed
-    ? "success"
-    : "warning";
+    if (settingsStatusSnapshot.checkingYt) {
+      return false;
+    }
 
-  const statusTagIcon = checkingYt ? (
-    <LuLoaderCircle className="status-icon icon-spin" size={14} strokeWidth={2.75} />
-  ) : ytStatus.installed ? (
-    <LuCircleCheck className="status-icon" size={14} strokeWidth={2.5} />
-  ) : (
-    <LuCircleAlert className="status-icon" size={14} strokeWidth={2.5} />
-  );
-
-  const ffSourceLabel =
-    ffStatus.source === "system"
-      ? "系统版本"
-      : ffStatus.source === "bundled"
-      ? "内置版本"
-      : "";
-
-  const ffStatusLabel = checkingFf
-    ? "正在检测 ffmpeg..."
-    : ffStatus.installed
-    ? `ffmpeg 已就绪${ffSourceLabel ? `（${ffSourceLabel}）` : ""}`
-    : "尚未检测到 ffmpeg";
-
-  const ffStatusTagColor = checkingFf
-    ? "processing"
-    : ffStatus.installed
-    ? "success"
-    : "warning";
-
-  const ffStatusTagIcon = checkingFf ? (
-    <LuLoaderCircle className="status-icon icon-spin" size={14} strokeWidth={2.75} />
-  ) : ffStatus.installed ? (
-    <LuCircleCheck className="status-icon" size={14} strokeWidth={2.5} />
-  ) : (
-    <LuCircleAlert className="status-icon" size={14} strokeWidth={2.5} />
-  );
-
-  const ytStatusHelperText = checkingYt
-    ? "正在检测系统中的 yt-dlp..."
-    : ytStatus.path
-    ? `当前使用的 yt-dlp 路径：${ytStatus.path}`
-    : "将自动在首次下载时获取 yt-dlp。";
-
-  const ffStatusHelperText = checkingFf
-    ? "正在检测系统中的 ffmpeg..."
-    : ffStatus.path
-    ? `当前使用的 ffmpeg 路径：${ffStatus.path}`
-    : "未检测到 ffmpeg，请先通过下方按钮安装或在系统中安装，以支持音频转换与封面嵌入。";
-
-  const showYtDlpWarningBadge = !checkingYt && !ytStatus.installed;
+    return !settingsStatusSnapshot.ytInstalled;
+  }, [settingsStatusSnapshot]);
 
   return (
     <ConfigProvider
@@ -788,72 +647,13 @@ function App() {
         />
       </FloatButton.Group>
 
-      <Modal
-        title="设置"
+      <SettingsModal
+        ref={settingsModalRef}
         open={isSettingsModalOpen}
-        onCancel={closeSettingsModal}
-        footer={null}
-        centered
-        width={"70%"}
-      >
-        <Space direction="vertical" size="large" style={{ height: 300, width: "100%" }}>
-          <Space direction="vertical" size="small" style={{ width: "100%" }}>
-            <Flex
-              align="center"
-              justify="space-between"
-              wrap="wrap"
-              gap="small"
-            >
-              <Space align="center" size="small" wrap>
-                <Tag color={statusTagColor} icon={statusTagIcon} bordered>
-                  {ytStatusLabel}
-                </Tag>
-                <Tag color={ffStatusTagColor} icon={ffStatusTagIcon} bordered>
-                  {ffStatusLabel}
-                </Tag>
-              </Space>
-              <Space wrap>
-                <Button
-                  icon={<RedoOutlined />}
-                  onClick={refreshBinaryStatuses}
-                  disabled={
-                    checkingYt ||
-                    checkingFf ||
-                    isDownloading ||
-                    isInstallingYt ||
-                    isInstallingFf
-                  }
-                  loading={checkingYt || checkingFf}
-                >
-                  重新检测
-                </Button>
-                <Button
-                  type="primary"
-                  ghost
-                  icon={<DownloadOutlined />}
-                  onClick={installYtDlp}
-                  loading={isInstallingYt}
-                  disabled={isInstallingFf || isDownloading}
-                >
-                  安装 / 更新 yt-dlp
-                </Button>
-                <Button
-                  type="primary"
-                  ghost
-                  icon={<DownloadOutlined />}
-                  onClick={installFfmpeg}
-                  loading={isInstallingFf}
-                  disabled={isInstallingYt || isDownloading}
-                >
-                  安装 / 更新 ffmpeg
-                </Button>
-              </Space>
-            </Flex>
-            <Text type="secondary">{ytStatusHelperText}</Text>
-            <Text type="secondary">{ffStatusHelperText}</Text>
-          </Space>
-        </Space>
-      </Modal>
+        onClose={closeSettingsModal}
+        isDownloading={isDownloading}
+        onStatusChange={handleSettingsStatusChange}
+      />
 
       <Drawer
         title="Debugger"

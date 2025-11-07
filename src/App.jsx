@@ -15,7 +15,6 @@ import {
   Select,
   Segmented,
   Space,
-  Tooltip,
   Typography,
 } from "antd";
 import {
@@ -28,16 +27,6 @@ import {
   LuSettings,
   LuSquareChevronRight,
 } from "react-icons/lu";
-import {
-  SiYoutube,
-  SiBilibili,
-  SiTiktok,
-  SiInstagram,
-  SiVimeo,
-  SiX,
-  SiFacebook,
-  SiSoundcloud,
-} from "react-icons/si";
 import About from "./About";
 import SettingsModal from "./SettingsModal";
 import { APP_VERSION } from "./version";
@@ -68,16 +57,6 @@ const VIDEO_QUALITY_LABELS = {
   highest: "最高画质",
 };
 
-const SUPPORTED_SITES = [
-  { label: "YouTube", Icon: SiYoutube, color: "#ff0000" },
-  { label: "Bilibili", Icon: SiBilibili, color: "#00A1D6" },
-  { label: "TikTok", Icon: SiTiktok, color: "#000000" },
-  { label: "Instagram", Icon: SiInstagram, color: "#E4405F" },
-  { label: "Vimeo", Icon: SiVimeo, color: "#1AB7EA" },
-  { label: "Twitter", Icon: SiX, color: "#1DA1F2" },
-  { label: "Facebook", Icon: SiFacebook, color: "#1877F2" },
-  { label: "SoundCloud", Icon: SiSoundcloud, color: "#FF5500" },
-];
 
 function App() {
   const [url, setUrl] = useState("");
@@ -546,17 +525,6 @@ function App() {
                     <Text type="secondary">
                       一款基于 Tauri2 的 yt-dlp 图形化下载工具
                     </Text>
-                  </div>
-                </Space>
-                <Space direction="vertical" size={8} align="center">
-                  <div className="supported-sites-list">
-                    {SUPPORTED_SITES.map(({ label, Icon, color }) => (
-                      <Tooltip key={label} title={label}>
-                        <span className="supported-site-icon" aria-label={label}>
-                          <Icon size={22} color={color} />
-                        </span>
-                      </Tooltip>
-                    ))}
                   </div>
                 </Space>
               </Space>

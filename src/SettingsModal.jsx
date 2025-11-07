@@ -1,8 +1,18 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { DownloadOutlined, RedoOutlined } from "@ant-design/icons";
-import { Alert, Button, Flex, Modal, Segmented, Space, Tag, Typography } from "antd";
+import { Alert, Button, Flex, Modal, Segmented, Space, Tag, Tooltip, Typography } from "antd";
 import { LuCircleAlert, LuCircleCheck, LuLoaderCircle } from "react-icons/lu";
+import {
+  SiYoutube,
+  SiBilibili,
+  SiTiktok,
+  SiInstagram,
+  SiVimeo,
+  SiX,
+  SiFacebook,
+  SiSoundcloud,
+} from "react-icons/si";
 import { extractErrorMessage } from "./utils/errors";
 
 const { Text } = Typography;
@@ -15,6 +25,17 @@ const VIDEO_QUALITY_OPTIONS = [
 
 const VIDEO_QUALITY_HINT =
   "低画质：优先尝试 480P 及以下；中画质：优先获取 1080P；最高画质：尝试最高可用画质（Bilibili 大会员可解锁 4K）。";
+
+const SUPPORTED_SITES = [
+  { label: "YouTube", Icon: SiYoutube, color: "#ff0000" },
+  { label: "Bilibili", Icon: SiBilibili, color: "#00A1D6" },
+  { label: "TikTok", Icon: SiTiktok, color: "#000000" },
+  { label: "Instagram", Icon: SiInstagram, color: "#E4405F" },
+  { label: "Vimeo", Icon: SiVimeo, color: "#1AB7EA" },
+  { label: "Twitter", Icon: SiX, color: "#1DA1F2" },
+  { label: "Facebook", Icon: SiFacebook, color: "#1877F2" },
+  { label: "SoundCloud", Icon: SiSoundcloud, color: "#FF5500" },
+];
 
 const SettingsModal = forwardRef(function SettingsModal(
   {
@@ -322,6 +343,19 @@ const SettingsModal = forwardRef(function SettingsModal(
             disabled={isDownloading}
           />
           <Text type="secondary">{VIDEO_QUALITY_HINT}</Text>
+        </Space>
+        <Space direction="vertical" size="small" style={{ width: "100%" }}>
+          <Text strong>支持的网站</Text>
+          <Text type="secondary">当前版本已针对以下站点进行适配：</Text>
+          <div className="supported-sites-list">
+            {SUPPORTED_SITES.map(({ label, Icon, color }) => (
+              <Tooltip key={label} title={label}>
+                <span className="supported-site-icon" aria-label={label}>
+                  <Icon size={22} color={color} />
+                </span>
+              </Tooltip>
+            ))}
+          </div>
         </Space>
         {feedback?.message ? (
           <Alert type={feedback.type} showIcon message={feedback.message} />

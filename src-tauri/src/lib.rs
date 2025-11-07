@@ -185,15 +185,13 @@ async fn download_media(
         output_dir.to_string_lossy().to_string(),
     ];
 
-    if should_use_browser_cookies(&url) {
-        if let Some(browser) = browser
-            .as_deref()
-            .map(str::trim)
-            .filter(|value| !value.is_empty())
-        {
-            args.push("--cookies-from-browser".into());
-            args.push(browser.to_string());
-        }
+    if let Some(browser) = browser
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    {
+        args.push("--cookies-from-browser".into());
+        args.push(browser.to_string());
     }
 
     let ffmpeg_path = match mode {
@@ -321,15 +319,6 @@ fn is_bilibili_url(url: &str) -> bool {
         || lower.contains("b23.tv")
         || lower.contains("bilivideo.com")
         || lower.contains("acg.tv")
-}
-
-fn should_use_browser_cookies(url: &str) -> bool {
-    is_youtube_url(url) || is_bilibili_url(url)
-}
-
-fn is_youtube_url(url: &str) -> bool {
-    let lower = url.to_ascii_lowercase();
-    lower.contains("youtube.com") || lower.contains("youtu.be")
 }
 
 struct ProgressInfo {

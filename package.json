@@ -15,9 +15,9 @@
     "@tauri-apps/plugin-dialog": "^2.4.2",
     "@tauri-apps/plugin-opener": "^2.5.2",
     "antd": "^5.28.0",
-    "lucide-react": "^0.469.0",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "react-icons": "^5.5.0"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",

@@ -18,6 +18,7 @@ const About = ({ open, onClose }) => (
     onCancel={onClose}
     footer={null}
     centered
+    width="70%"
     title={
       <Space align="center">
         <img src={logo} alt="yt-dlp-x logo" className="about-logo" />

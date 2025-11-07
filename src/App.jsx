@@ -15,6 +15,7 @@ import {
   Select,
   Segmented,
   Space,
+  Tooltip,
   Typography,
 } from "antd";
 import {
@@ -27,6 +28,16 @@ import {
   LuSettings,
   LuSquareChevronRight,
 } from "react-icons/lu";
+import {
+  SiYoutube,
+  SiBilibili,
+  SiTiktok,
+  SiInstagram,
+  SiVimeo,
+  SiTwitter,
+  SiFacebook,
+  SiSoundcloud,
+} from "react-icons/si";
 import About from "./About";
 import SettingsModal from "./SettingsModal";
 import { APP_VERSION } from "./version";
@@ -44,6 +55,11 @@ const BROWSER_OPTIONS = [
   { label: "Safari (macOS)", value: "safari" },
 ];
 
+const COOKIE_SOURCE_OPTIONS = [
+  { label: "不使用 Cookie", value: "none" },
+  ...BROWSER_OPTIONS,
+];
+
 const DEFAULT_BROWSER = "chrome";
 
 const VIDEO_QUALITY_LABELS = {
@@ -51,6 +67,17 @@ const VIDEO_QUALITY_LABELS = {
   medium: "中画质",
   highest: "最高画质",
 };
+
+const SUPPORTED_SITES = [
+  { label: "YouTube", Icon: SiYoutube, color: "#ff0000" },
+  { label: "Bilibili", Icon: SiBilibili, color: "#00A1D6" },
+  { label: "TikTok", Icon: SiTiktok, color: "#000000" },
+  { label: "Instagram", Icon: SiInstagram, color: "#E4405F" },
+  { label: "Vimeo", Icon: SiVimeo, color: "#1AB7EA" },
+  { label: "Twitter", Icon: SiTwitter, color: "#1DA1F2" },
+  { label: "Facebook", Icon: SiFacebook, color: "#1877F2" },
+  { label: "SoundCloud", Icon: SiSoundcloud, color: "#FF5500" },
+];
 
 function App() {
   const [url, setUrl] = useState("");
@@ -251,6 +278,8 @@ function App() {
       return;
     }
 
+    const browserForRequest = selectedBrowserOption?.value ?? null;
+
     const sessionId =
       typeof globalThis !== "undefined" &&
       globalThis.crypto &&
@@ -280,7 +309,7 @@ function App() {
         request: {
           url: trimmedUrl,
           mode: downloadType,
-          browser,
+          browser: browserForRequest,
           outputDir,
           sessionId,
           quality: videoQuality,
@@ -397,32 +426,12 @@ function App() {
     });
   }, []);
 
-  const cookieSiteLabel = useMemo(() => {
-    const value = url.trim().toLowerCase();
-    if (!value) {
-      return null;
-    }
-
-    if (value.includes("youtube.com") || value.includes("youtu.be")) {
-      return "YouTube";
-    }
-
-    if (
-      value.includes("bilibili.com") ||
-      value.includes("b23.tv") ||
-      value.includes("bilivideo.com") ||
-      value.includes("acg.tv")
-    ) {
-      return "Bilibili";
-    }
-
-    return null;
-  }, [url]);
-
-  const requiresBrowserCookies = useMemo(
-    () => Boolean(cookieSiteLabel),
-    [cookieSiteLabel]
+  const selectedBrowserOption = useMemo(
+    () => BROWSER_OPTIONS.find((option) => option.value === browser) ?? null,
+    [browser]
   );
+
+  const isUsingBrowserCookies = Boolean(selectedBrowserOption);
 
   const downloadButtonLabel = useMemo(() => {
     if (isDownloading) {
@@ -539,6 +548,18 @@ function App() {
                     </Text>
                   </div>
                 </Space>
+                <Space direction="vertical" size={8} align="center">
+                  <Text strong>支持下载的网站</Text>
+                  <div className="supported-sites-list">
+                    {SUPPORTED_SITES.map(({ label, Icon, color }) => (
+                      <Tooltip key={label} title={label}>
+                        <span className="supported-site-icon" aria-label={label}>
+                          <Icon size={22} color={color} />
+                        </span>
+                      </Tooltip>
+                    ))}
+                  </div>
+                </Space>
               </Space>
             </Card>
 
@@ -581,10 +602,10 @@ function App() {
                     value={browser}
                     onChange={(value) => setBrowser(value)}
                     disabled={isDownloading}
-                    options={BROWSER_OPTIONS}
+                    options={COOKIE_SOURCE_OPTIONS}
                   />
                   <Text type="secondary" className="field-helper">
-                    因Youtube/Bilibili等网站限制，工具会从所选浏览器读取cookies（需浏览器已登录）。
+                    选择浏览器后，工具会尝试读取该浏览器的 cookies 支持所有站点的下载（需浏览器已登录），也可以选择“不使用 Cookie”。
                   </Text>
                 </Form.Item>
 
@@ -612,13 +633,13 @@ function App() {
                   </Space.Compact>
                 </Form.Item>
 
-                {(requiresBrowserCookies || errorMessage || successMessage) && (
+                {(isUsingBrowserCookies || errorMessage || successMessage) && (
                   <Space direction="vertical" style={{ width: "100%" }}>
-                    {requiresBrowserCookies && (
+                    {isUsingBrowserCookies && selectedBrowserOption && (
                       <Alert
                         type="info"
                         showIcon
-                        message={`已检测到 ${cookieSiteLabel ?? "目标站点"} 链接，将使用所选浏览器的 cookies。`}
+                        message={`工具会尝试使用 ${selectedBrowserOption.label} 浏览器的 cookies 支持所有站点的下载（请确保该浏览器已登录）。`}
                       />
                     )}
                     {errorMessage && (

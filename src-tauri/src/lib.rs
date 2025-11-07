@@ -20,6 +20,9 @@ use utils::{
     yt_dlp::{self, BinarySource as YtDlpBinarySource},
 };
 
+const DOUYIN_REFERER: &str = "https://www.douyin.com/";
+const DOUYIN_USER_AGENT: &str = "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1";
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct YtDlpStatus {
@@ -221,6 +224,8 @@ async fn download_media(
         args.push(path_to_string(path));
     }
 
+    apply_site_specific_overrides(&mut args, &url);
+
     args.push(url.clone());
 
     let mut command = Command::new(&binary_path);
@@ -299,6 +304,15 @@ async fn download_media(
     })
 }
 
+fn apply_site_specific_overrides(args: &mut Vec<String>, url: &str) {
+    if is_douyin_url(url) {
+        args.push("--referer".into());
+        args.push(DOUYIN_REFERER.into());
+        args.push("--user-agent".into());
+        args.push(DOUYIN_USER_AGENT.into());
+    }
+}
+
 fn video_format_for_quality(quality: VideoQuality, url: &str) -> String {
     match quality {
         VideoQuality::Low => "bv*[height<=480]+ba/b[height<=480]/bv*[height<=720]+ba/b[height<=720]/worst".into(),
@@ -319,6 +333,11 @@ fn is_bilibili_url(url: &str) -> bool {
         || lower.contains("b23.tv")
         || lower.contains("bilivideo.com")
         || lower.contains("acg.tv")
+}
+
+fn is_douyin_url(url: &str) -> bool {
+    let lower = url.to_ascii_lowercase();
+    lower.contains("douyin.com") || lower.contains("iesdouyin.com")
 }
 
 struct ProgressInfo {

@@ -22,13 +22,13 @@ import {
 } from "antd";
 import { RedoOutlined, DownloadOutlined } from "@ant-design/icons";
 import {
-  LuAlertCircle,
-  LuCheckCircle,
+  LuCircleAlert,
+  LuCircleCheck,
   LuSquarePlay,
   LuFolder,
   LuFolderOpen,
   LuInfo,
-  LuLoader2,
+  LuLoaderCircle,
   LuMenu,
   LuHeadphones,
   LuSettings,
@@ -553,11 +553,11 @@ function App() {
     : "warning";
 
   const statusTagIcon = checkingYt ? (
-    <LuLoader2 className="status-icon icon-spin" size={14} strokeWidth={2.75} />
+    <LuLoaderCircle className="status-icon icon-spin" size={14} strokeWidth={2.75} />
   ) : ytStatus.installed ? (
-    <LuCheckCircle className="status-icon" size={14} strokeWidth={2.5} />
+    <LuCircleCheck className="status-icon" size={14} strokeWidth={2.5} />
   ) : (
-    <LuAlertCircle className="status-icon" size={14} strokeWidth={2.5} />
+    <LuCircleAlert className="status-icon" size={14} strokeWidth={2.5} />
   );
 
   const ffSourceLabel =
@@ -580,11 +580,11 @@ function App() {
     : "warning";
 
   const ffStatusTagIcon = checkingFf ? (
-    <LuLoader2 className="status-icon icon-spin" size={14} strokeWidth={2.75} />
+    <LuLoaderCircle className="status-icon icon-spin" size={14} strokeWidth={2.75} />
   ) : ffStatus.installed ? (
-    <LuCheckCircle className="status-icon" size={14} strokeWidth={2.5} />
+    <LuCircleCheck className="status-icon" size={14} strokeWidth={2.5} />
   ) : (
-    <LuAlertCircle className="status-icon" size={14} strokeWidth={2.5} />
+    <LuCircleAlert className="status-icon" size={14} strokeWidth={2.5} />
   );
 
   const ytStatusHelperText = checkingYt

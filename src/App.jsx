@@ -73,6 +73,7 @@ function App() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isLogDrawerOpen, setIsLogDrawerOpen] = useState(false);
 
+  const urlInputRef = useRef(null);
   const settingsModalRef = useRef(null);
   const [settingsStatusSnapshot, setSettingsStatusSnapshot] = useState(null);
 
@@ -87,6 +88,10 @@ function App() {
   const hasRealtimeLogsRef = useRef(false);
   const logContainerRef = useRef(null);
   const [isLogAutoScrollEnabled, setIsLogAutoScrollEnabled] = useState(true);
+
+  useEffect(() => {
+    urlInputRef.current?.focus();
+  }, []);
 
   useEffect(() => {
     loadDefaultOutputDir();
@@ -534,6 +539,7 @@ function App() {
               <Form layout="vertical" onSubmitCapture={handleDownload}>
                 <Form.Item label="视频链接" required>
                   <Input
+                    ref={urlInputRef}
                     value={url}
                     onChange={(event) => setUrl(event.target.value)}
                     placeholder="粘贴 YouTube 或其它站点的链接"

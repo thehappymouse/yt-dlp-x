@@ -10,25 +10,25 @@ pub enum BinarySource {
 }
 
 pub fn detect_existing() -> Result<Option<(PathBuf, BinarySource)>, String> {
-    if let Some(path) = detect_system_binary() {
-        return Ok(Some((path, BinarySource::System)));
-    }
-
     if let Some(path) = detect_bundled_binary()? {
         return Ok(Some((path, BinarySource::Bundled)));
+    }
+
+    if let Some(path) = detect_system_binary() {
+        return Ok(Some((path, BinarySource::System)));
     }
 
     Ok(None)
 }
 
 pub async fn ensure_available() -> Result<(PathBuf, BinarySource), String> {
-    if let Some(path) = detect_system_binary() {
-        return Ok((path, BinarySource::System));
-    }
-
     if let Some(path) = detect_bundled_binary()? {
         ensure_executable_permissions(&path).await?;
         return Ok((path, BinarySource::Bundled));
+    }
+
+    if let Some(path) = detect_system_binary() {
+        return Ok((path, BinarySource::System));
     }
 
     let path = bundled_binary_path()?;

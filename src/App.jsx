@@ -12,9 +12,10 @@ import {
   Form,
   Input,
   Progress,
+  Radio,
   Select,
-  Segmented,
   Space,
+  Tooltip,
   Typography,
 } from "antd";
 import {
@@ -26,6 +27,7 @@ import {
   LuHeadphones,
   LuSettings,
   LuSquareChevronRight,
+  LuHelpCircle,
 } from "react-icons/lu";
 import About from "./About";
 import SettingsModal from "./SettingsModal";
@@ -72,10 +74,17 @@ function App() {
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isLogDrawerOpen, setIsLogDrawerOpen] = useState(false);
+  const [isParsing, setIsParsing] = useState(false);
+  const [parseError, setParseError] = useState("");
+  const [mediaPreview, setMediaPreview] = useState(null);
+  const [lastParsedUrl, setLastParsedUrl] = useState("");
 
   const urlInputRef = useRef(null);
+  const isParsingRef = useRef(false);
   const settingsModalRef = useRef(null);
   const [settingsStatusSnapshot, setSettingsStatusSnapshot] = useState(null);
+
+  const hasPreview = Boolean(mediaPreview);
 
   const closeAboutDialog = () => setIsAboutDialogOpen(false);
   const openAboutDialog = () => setIsAboutDialogOpen(true);
@@ -253,11 +262,32 @@ function App() {
     }
   };
 
+  const handleUrlChange = (event) => {
+    const nextValue = event.target.value;
+    setUrl(nextValue);
+    setErrorMessage("");
+    setSuccessMessage("");
+    if (parseError) {
+      setParseError("");
+    }
+    const trimmedValue = nextValue.trim();
+    if (mediaPreview && trimmedValue !== lastParsedUrl) {
+      setMediaPreview(null);
+      setLastParsedUrl("");
+    }
+  };
+
   const handleDownload = async (event) => {
     event.preventDefault();
     const trimmedUrl = url.trim();
     if (!trimmedUrl) {
       setErrorMessage("请先输入需要下载的视频链接。");
+      setSuccessMessage("");
+      return;
+    }
+
+    if (!mediaPreview || trimmedUrl !== lastParsedUrl) {
+      setErrorMessage("请先解析需要下载的视频链接。");
       setSuccessMessage("");
       return;
     }
@@ -375,6 +405,70 @@ function App() {
     );
   };
 
+  const triggerParse = useCallback(
+    async (force = false) => {
+      const trimmedUrl = url.trim();
+      if (!trimmedUrl) {
+        if (force) {
+          setParseError("请先输入需要解析的视频链接。");
+          setMediaPreview(null);
+          setLastParsedUrl("");
+        }
+        return;
+      }
+
+      if (!force && hasPreview && trimmedUrl === lastParsedUrl) {
+        return;
+      }
+
+      if (isParsingRef.current) {
+        return;
+      }
+
+      isParsingRef.current = true;
+      setIsParsing(true);
+      setParseError("");
+      try {
+        const response = await invoke("fetch_media_preview", {
+          request: { url: trimmedUrl },
+        });
+        setMediaPreview({
+          title: response?.title ?? "",
+          thumbnail: response?.thumbnail ?? "",
+          uploader: response?.uploader ?? "",
+          duration:
+            typeof response?.duration === "number" ? response.duration : null,
+          extractor: response?.extractor ?? "",
+          webpageUrl: response?.webpageUrl ?? "",
+        });
+        setLastParsedUrl(trimmedUrl);
+        setParseError("");
+      } catch (err) {
+        setMediaPreview(null);
+        setLastParsedUrl("");
+        setParseError(`解析失败：${extractErrorMessage(err)}`);
+      } finally {
+        isParsingRef.current = false;
+        setIsParsing(false);
+      }
+    },
+    [url, hasPreview, lastParsedUrl]
+  );
+
+  const handleUrlBlur = useCallback(() => {
+    triggerParse(false);
+  }, [triggerParse]);
+
+  const handleUrlPressEnter = useCallback(
+    (event) => {
+      if (!hasPreview) {
+        event.preventDefault();
+        triggerParse(true);
+      }
+    },
+    [hasPreview, triggerParse]
+  );
+
   const handleVideoQualityUpdate = useCallback(
     (nextQuality) => {
       if (typeof nextQuality !== "string") {
@@ -486,6 +580,14 @@ function App() {
     return "准备中...";
   }, [downloadProgress]);
 
+  const previewDurationLabel = useMemo(() => {
+    if (!mediaPreview || typeof mediaPreview.duration !== "number") {
+      return null;
+    }
+
+    return formatDuration(mediaPreview.duration);
+  }, [mediaPreview]);
+
   const showYtDlpWarningBadge = useMemo(() => {
     if (!settingsStatusSnapshot) {
       return false;
@@ -497,6 +599,29 @@ function App() {
 
     return !settingsStatusSnapshot.ytInstalled;
   }, [settingsStatusSnapshot]);
+
+  const cookieTooltipMessage =
+    "选择浏览器后，工具会尝试读取该浏览器的 cookies 支持所有站点的下载（需浏览器已登录），也可以选择“不使用 Cookie”。";
+
+  const cookieLabelNode = (
+    <span className="form-label-with-help">
+      Cookies 浏览器
+      <Tooltip title={cookieTooltipMessage}>
+        <span className="form-label-help-icon" role="img" aria-label="Cookie 提示">
+          <LuHelpCircle size={16} strokeWidth={2.5} />
+        </span>
+      </Tooltip>
+    </span>
+  );
+
+  const appShellClassName = ["app-shell", hasPreview ? "" : "hero-mode"]
+    .filter(Boolean)
+    .join(" ");
+
+  const downloadCardClassName = [
+    "download-card",
+    hasPreview ? "download-card-active" : "download-card-hero",
+  ].join(" ");
 
   return (
     <ConfigProvider
@@ -517,8 +642,8 @@ function App() {
       }}
     >
       <div className="app-background">
-        <div className="app-shell">
-          <Space direction="vertical" size="large" style={{ width: "100%" }}>
+        <div className={appShellClassName}>
+          <div className="main-stack">
             <Card border={false} className="hero-card">
               <Space direction="vertical" size="middle" align="center">
                 <Space align="center" size="middle" wrap>
@@ -535,129 +660,201 @@ function App() {
               </Space>
             </Card>
 
-            <Card>
+            <Card className={downloadCardClassName}>
               <Form layout="vertical" onSubmitCapture={handleDownload}>
-                <Form.Item label="视频链接" required>
-                  <Input
-                    ref={urlInputRef}
-                    value={url}
-                    onChange={(event) => setUrl(event.target.value)}
-                    placeholder="粘贴 YouTube 或其它站点的链接"
-                  />
-                </Form.Item>
-
-                <Form.Item label="下载类型">
-                  <Segmented
-                    block
-                    className="download-type-segmented"
-                    options={[
-                      {
-                        label: `视频（${
-                          VIDEO_QUALITY_LABELS[videoQuality] ?? "最高画质"
-                        }）`,
-                        value: "video",
-                        icon: <LuSquarePlay size={18} strokeWidth={2} />,
-                      },
-                      {
-                        label: "纯音频 (MP3)",
-                        value: "audio",
-                        icon: <LuHeadphones size={18} strokeWidth={2} />,
-                      },
-                    ]}
-                    value={downloadType}
-                    onChange={(value) => setDownloadType(String(value))}
-                    disabled={isDownloading}
-                  />
-                </Form.Item>
-
-                <Form.Item label="Cookies 浏览器">
-                  <Select
-                    value={browser}
-                    onChange={(value) => setBrowser(value)}
-                    disabled={isDownloading}
-                    options={COOKIE_SOURCE_OPTIONS}
-                  />
-                  <Text type="secondary" className="field-helper">
-                    选择浏览器后，工具会尝试读取该浏览器的 cookies 支持所有站点的下载（需浏览器已登录），也可以选择“不使用 Cookie”。
-                  </Text>
-                </Form.Item>
-
-                <Form.Item label="保存位置">
-                  <Space.Compact style={{ width: "100%" }}>
+                <Form.Item
+                  label={hasPreview ? "视频链接" : null}
+                  required
+                  colon={false}
+                  className={`url-form-item ${
+                    hasPreview ? "url-form-item-compact" : "url-form-item-hero"
+                  }`}
+                >
+                  <Space.Compact
+                    style={{ width: "100%" }}
+                    className={`url-input-group ${
+                      hasPreview ? "" : "url-input-group-hero"
+                    }`}
+                  >
                     <Input
-                      value={outputDir}
-                      onChange={(event) => setOutputDir(event.target.value)}
-                      placeholder="下载保存目录"
+                      ref={urlInputRef}
+                      value={url}
+                      onChange={handleUrlChange}
+                      onBlur={handleUrlBlur}
+                      onPressEnter={handleUrlPressEnter}
+                      placeholder="粘贴 YouTube 或其它站点的链接"
+                      size="large"
+                      allowClear
+                      className={`url-input ${
+                        hasPreview ? "" : "url-input-hero"
+                      }`}
                     />
                     <Button
-                      icon={<LuFolder size={18} strokeWidth={1.75} />}
-                      onClick={handleSelectOutputDir}
+                      type="primary"
+                      size="large"
+                      className="parse-button"
+                      onClick={() => triggerParse(true)}
+                      loading={isParsing}
                     >
-                      更换
-                    </Button>
-                    <Button
-                      icon={<LuFolderOpen size={18} strokeWidth={1.75} />}
-                      onClick={handleOpenDir}
-                      type="link"
-                      disabled={!outputDir.trim()}
-                    >
-                      打开
+                      解析
                     </Button>
                   </Space.Compact>
                 </Form.Item>
 
-                {(isUsingBrowserCookies || errorMessage || successMessage) && (
-                  <Space direction="vertical" style={{ width: "100%" }}>
-                    {isUsingBrowserCookies && selectedBrowserOption && (
-                      <Alert
-                        type="info"
-                        showIcon
-                        message={`工具会尝试使用 ${selectedBrowserOption.label} 浏览器的 cookies 支持所有站点的下载（请确保该浏览器已登录）。`}
-                      />
-                    )}
-                    {errorMessage && (
-                      <Alert type="error" showIcon message={errorMessage} />
-                    )}
-                    {successMessage && (
-                      <Alert type="success" showIcon message={successMessage} />
-                    )}
-                  </Space>
+                {parseError && (
+                  <Alert type="error" showIcon message={parseError} />
                 )}
 
-                <Form.Item>
-                  <Space direction="vertical" style={{ width: "100%" }}>
-                    <Button
-                      type="primary"
-                      htmlType="submit"
-                      block
-                      size="large"
-                      style={{ marginTop: 5 }}
-                      loading={isDownloading}
-                      disabled={!url.trim()}
-                    >
-                      {downloadButtonLabel}
-                    </Button>
-                    {isDownloading && (
-                      <Space
-                        direction="vertical"
-                        size={4}
-                        style={{ width: "100%" }}
-                      >
-                        <Progress
-                          percent={progressPercent ?? 0}
-                          status={
-                            progressPercent === null ? "active" : undefined
-                          }
-                          showInfo={false}
+                {mediaPreview && (
+                  <div className="preview-panel">
+                    <div className="preview-cover">
+                      {mediaPreview.thumbnail ? (
+                        <img
+                          src={mediaPreview.thumbnail}
+                          alt={mediaPreview.title || "视频封面"}
                         />
-                        <Text type="secondary">{progressText}</Text>
+                      ) : (
+                        <div className="preview-placeholder">暂无封面</div>
+                      )}
+                    </div>
+                    <div className="preview-meta">
+                      <Title level={4} className="preview-title">
+                        {mediaPreview.title || "未获取到标题"}
+                      </Title>
+                      <Space size="small" wrap>
+                        {mediaPreview.uploader ? (
+                          <Text>{mediaPreview.uploader}</Text>
+                        ) : null}
+                        {previewDurationLabel ? (
+                          <Text type="secondary">
+                            时长 {previewDurationLabel}
+                          </Text>
+                        ) : null}
+                        {mediaPreview.extractor ? (
+                          <Text type="secondary">{mediaPreview.extractor}</Text>
+                        ) : null}
+                      </Space>
+                    </div>
+                  </div>
+                )}
+
+                {mediaPreview ? (
+                  <div className="download-options">
+                    <Form.Item label="下载类型" colon={false}>
+                      <Radio.Group
+                        value={downloadType}
+                        onChange={(event) => setDownloadType(event.target.value)}
+                        disabled={isDownloading}
+                        className="download-type-radios"
+                      >
+                        <Space direction="vertical" size="middle">
+                          <Radio value="video">
+                            <Space size={8}>
+                              <LuSquarePlay size={18} strokeWidth={2} />
+                              <span>
+                                视频（
+                                {VIDEO_QUALITY_LABELS[videoQuality] ?? "最高画质"}
+                                ）
+                              </span>
+                            </Space>
+                          </Radio>
+                          <Radio value="audio">
+                            <Space size={8}>
+                              <LuHeadphones size={18} strokeWidth={2} />
+                              <span>纯音频 (MP3)</span>
+                            </Space>
+                          </Radio>
+                        </Space>
+                      </Radio.Group>
+                    </Form.Item>
+
+                    <Form.Item label={cookieLabelNode} colon={false}>
+                      <Select
+                        value={browser}
+                        onChange={(value) => setBrowser(value)}
+                        disabled={isDownloading}
+                        options={COOKIE_SOURCE_OPTIONS}
+                      />
+                    </Form.Item>
+
+                    <Form.Item label="保存位置" colon={false}>
+                      <Space.Compact style={{ width: "100%" }}>
+                        <Input
+                          value={outputDir}
+                          onChange={(event) => setOutputDir(event.target.value)}
+                          placeholder="下载保存目录"
+                        />
+                        <Button
+                          icon={<LuFolder size={18} strokeWidth={1.75} />}
+                          onClick={handleSelectOutputDir}
+                        >
+                          更换
+                        </Button>
+                        <Button
+                          icon={<LuFolderOpen size={18} strokeWidth={1.75} />}
+                          onClick={handleOpenDir}
+                          type="link"
+                          disabled={!outputDir.trim()}
+                        >
+                          打开
+                        </Button>
+                      </Space.Compact>
+                    </Form.Item>
+
+                    {(isUsingBrowserCookies || errorMessage || successMessage) && (
+                      <Space direction="vertical" style={{ width: "100%" }}>
+                        {isUsingBrowserCookies && selectedBrowserOption && (
+                          <Alert
+                            type="info"
+                            showIcon
+                            message={`工具会尝试使用 ${selectedBrowserOption.label} 浏览器的 cookies 支持所有站点的下载（请确保该浏览器已登录）。`}
+                          />
+                        )}
+                        {errorMessage && (
+                          <Alert type="error" showIcon message={errorMessage} />
+                        )}
+                        {successMessage && (
+                          <Alert type="success" showIcon message={successMessage} />
+                        )}
                       </Space>
                     )}
-                  </Space>
-                </Form.Item>
+
+                    <Form.Item>
+                      <Space direction="vertical" style={{ width: "100%" }}>
+                        <Button
+                          type="primary"
+                          htmlType="submit"
+                          block
+                          size="large"
+                          style={{ marginTop: 5 }}
+                          loading={isDownloading}
+                          disabled={!url.trim()}
+                        >
+                          {downloadButtonLabel}
+                        </Button>
+                        {isDownloading && (
+                          <Space
+                            direction="vertical"
+                            size={4}
+                            style={{ width: "100%" }}
+                          >
+                            <Progress
+                              percent={progressPercent ?? 0}
+                              status={
+                                progressPercent === null ? "active" : undefined
+                              }
+                              showInfo={false}
+                            />
+                            <Text type="secondary">{progressText}</Text>
+                          </Space>
+                        )}
+                      </Space>
+                    </Form.Item>
+                  </div>
+                ) : null}
               </Form>
             </Card>
-          </Space>
+          </div>
         </div>
       </div>
 
@@ -745,6 +942,24 @@ const formatPercentText = (value) => {
   }
 
   return `${Math.trunc(floored)}%`;
+};
+
+const formatDuration = (value) => {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    return null;
+  }
+
+  const totalSeconds = Math.max(0, Math.floor(value));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const pad = (unit) => (unit < 10 ? `0${unit}` : `${unit}`);
+
+  if (hours > 0) {
+    return `${hours}:${pad(minutes)}:${pad(seconds)}`;
+  }
+
+  return `${minutes}:${pad(seconds)}`;
 };
 
 export default App;

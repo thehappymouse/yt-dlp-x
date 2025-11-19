@@ -1,7 +1,7 @@
 mod utils;
 
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+use serde_json::{json, Value};
 use std::{
     path::{Path, PathBuf},
     process::Stdio,
@@ -81,6 +81,23 @@ struct DownloadResponse {
     output_dir: String,
 }
 
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct PreviewRequest {
+    url: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct MediaPreview {
+    title: Option<String>,
+    thumbnail: Option<String>,
+    uploader: Option<String>,
+    duration: Option<f64>,
+    extractor: Option<String>,
+    webpage_url: Option<String>,
+}
+
 #[tauri::command]
 async fn check_yt_dlp() -> Result<YtDlpStatus, String> {
     let status = match yt_dlp::detect_existing()? {
@@ -135,6 +152,82 @@ async fn install_ffmpeg() -> Result<FfmpegStatus, String> {
         path: Some(path_to_string(&path)),
         source: Some(ffmpeg_source_label(FfmpegBinarySource::Bundled)),
     })
+}
+
+#[tauri::command]
+async fn fetch_media_preview(request: PreviewRequest) -> Result<MediaPreview, String> {
+    let url = request.url.trim();
+    if url.is_empty() {
+        return Err("请输入需要解析的视频链接".into());
+    }
+
+    let (binary_path, _) = yt_dlp::ensure_available().await?;
+
+    let mut command = Command::new(&binary_path);
+    command
+        .arg("--dump-single-json")
+        .arg("--no-warnings")
+        .arg("--no-call-home")
+        .arg("--no-playlist")
+        .arg("--skip-download")
+        .arg(url);
+    command.kill_on_drop(true);
+
+    let output = command
+        .output()
+        .await
+        .map_err(|err| format!("解析视频信息失败: {err}"))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        return Err(if !stderr.is_empty() {
+            stderr
+        } else {
+            "解析视频信息失败，请确认链接可访问。".into()
+        });
+    }
+
+    let parsed: Value =
+        serde_json::from_slice(&output.stdout).map_err(|err| format!("解析视频信息失败: {err}"))?;
+
+    let payload = extract_primary_entry(&parsed);
+
+    let preview = MediaPreview {
+        title: optional_string(payload.get("title")),
+        thumbnail: optional_string(payload.get("thumbnail")),
+        uploader: optional_string(
+            payload
+                .get("uploader")
+                .or_else(|| payload.get("channel"))
+                .or_else(|| payload.get("artist")),
+        ),
+        duration: payload.get("duration").and_then(|value| value.as_f64()),
+        extractor: optional_string(
+            payload
+                .get("extractor_key")
+                .or_else(|| payload.get("extractor")),
+        ),
+        webpage_url: optional_string(
+            payload
+                .get("webpage_url")
+                .or_else(|| payload.get("original_url"))
+                .or_else(|| payload.get("url")),
+        ),
+    };
+
+    Ok(preview)
+}
+
+fn optional_string(value: Option<&Value>) -> Option<String> {
+    value.and_then(|val| val.as_str()).map(|s| s.to_string())
+}
+
+fn extract_primary_entry<'a>(value: &'a Value) -> &'a Value {
+    value
+        .get("entries")
+        .and_then(|entries| entries.as_array())
+        .and_then(|entries| entries.first())
+        .unwrap_or(value)
 }
 
 #[tauri::command]
@@ -640,6 +733,7 @@ pub fn run() {
             check_ffmpeg,
             install_yt_dlp,
             install_ffmpeg,
+            fetch_media_preview,
             download_media,
             get_default_download_dir,
             open_directory

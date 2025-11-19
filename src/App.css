@@ -15,6 +15,43 @@ body {
   width: 100%;
 }
 
+.app-shell.hero-mode {
+  min-height: calc(100vh - 160px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.main-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+.download-card {
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.download-card-hero {
+  box-shadow: 0 35px 90px rgba(15, 23, 42, 0.12);
+}
+
+.download-card-hero .ant-card-body {
+  padding: 48px 56px;
+}
+
+.download-card-active .ant-card-body {
+  padding: 24px 32px;
+}
+
+@media (max-width: 640px) {
+  .download-card-hero .ant-card-body,
+  .download-card-active .ant-card-body {
+    padding: 20px;
+  }
+}
+
 .hero-card .ant-card-body {
   display: flex;
   flex-direction: column;
@@ -38,6 +75,130 @@ body {
   margin-top: 8px;
 }
 
+.url-form-item {
+  margin-bottom: 0;
+}
+
+.url-form-item-hero {
+  max-width: 640px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.url-form-item-compact {
+  margin-bottom: 0;
+}
+
+.url-form-item-hero .ant-space-compact {
+  justify-content: center;
+}
+
+.url-input-group {
+  width: 100%;
+}
+
+.url-input-group .ant-input,
+.url-input-group .ant-btn {
+  height: 52px;
+}
+
+.url-input-group-hero .ant-input,
+.url-input-group-hero .ant-btn {
+  height: 64px;
+}
+
+.url-input {
+  font-size: 16px;
+}
+
+.url-input-hero {
+  font-size: 18px;
+}
+
+.parse-button {
+  font-weight: 600;
+}
+
+.preview-panel {
+  display: flex;
+  gap: 20px;
+  padding: 18px;
+  border-radius: 16px;
+  background: #f8fafc;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  margin-top: 16px;
+}
+
+.preview-cover {
+  width: 220px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.preview-placeholder {
+  font-size: 14px;
+  color: #475569;
+}
+
+.preview-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.preview-title {
+  margin: 0;
+}
+
+.download-options {
+  margin-top: 24px;
+  animation: fadeInUp 0.3s ease;
+}
+
+.form-label-with-help {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-label-help-icon {
+  color: #94a3b8;
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+}
+
+.download-type-radios .ant-radio-wrapper {
+  width: 100%;
+  margin: 0;
+}
+
+.download-type-radios svg {
+  color: #2563eb;
+}
+
+@media (max-width: 720px) {
+  .preview-panel {
+    flex-direction: column;
+  }
+
+  .preview-cover {
+    width: 100%;
+  }
+}
+
 .log-output {
   margin: 0;
   padding: 16px;
@@ -55,12 +216,6 @@ body {
 
 .author-item {
   padding: 8px 0;
-}
-
-.download-type-segmented .ant-segmented-item-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .app-footer {
@@ -86,17 +241,6 @@ body {
   }
 }
 
-.download-type-segmented .ant-segmented-item-label {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
-.download-type-segmented svg {
-  vertical-align: middle;
-}
-
 .supported-sites-list {
   display: flex;
   flex-wrap: wrap;
@@ -119,4 +263,15 @@ body {
 .supported-site-icon svg {
   width: 22px;
   height: 22px;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

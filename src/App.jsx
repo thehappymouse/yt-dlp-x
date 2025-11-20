@@ -12,9 +12,10 @@ import {
   Form,
   Input,
   Progress,
+  Radio,
   Select,
-  Segmented,
   Space,
+  Tooltip,
   Typography,
 } from "antd";
 import {
@@ -415,8 +416,6 @@ function App() {
     [browser]
   );
 
-  const isUsingBrowserCookies = Boolean(selectedBrowserOption);
-
   const downloadButtonLabel = useMemo(() => {
     if (isDownloading) {
       return "正在下载...";
@@ -498,6 +497,32 @@ function App() {
     return !settingsStatusSnapshot.ytInstalled;
   }, [settingsStatusSnapshot]);
 
+  const cookieTooltipContent = (
+    <div>
+      <div>
+        选择浏览器后，工具会尝试读取该浏览器的 cookies，帮助下载需要登录的站点。
+      </div>
+      <div>
+        请确保该浏览器已登录目标平台；若不需要 cookies，可选择“不使用 Cookie”。
+      </div>
+    </div>
+  );
+
+  const cookieFieldLabel = (
+    <Space size={6} align="center">
+      <span>Cookies 浏览器</span>
+      <Tooltip placement="top" title={cookieTooltipContent}>
+        <span
+          className="field-help-icon"
+          tabIndex={0}
+          aria-label="Cookies 使用说明"
+        >
+          <LuInfo size={16} strokeWidth={2} />
+        </span>
+      </Tooltip>
+    </Space>
+  );
+
   return (
     <ConfigProvider
       theme={{
@@ -543,43 +568,46 @@ function App() {
                     value={url}
                     onChange={(event) => setUrl(event.target.value)}
                     placeholder="粘贴 YouTube 或其它站点的链接"
+                    size="large"
+                    className="url-input"
+                    allowClear
+                    autoFocus
                   />
                 </Form.Item>
 
                 <Form.Item label="下载类型">
-                  <Segmented
-                    block
-                    className="download-type-segmented"
-                    options={[
-                      {
-                        label: `视频（${
-                          VIDEO_QUALITY_LABELS[videoQuality] ?? "最高画质"
-                        }）`,
-                        value: "video",
-                        icon: <LuSquarePlay size={18} strokeWidth={2} />,
-                      },
-                      {
-                        label: "纯音频 (MP3)",
-                        value: "audio",
-                        icon: <LuHeadphones size={18} strokeWidth={2} />,
-                      },
-                    ]}
+                  <Radio.Group
                     value={downloadType}
-                    onChange={(value) => setDownloadType(String(value))}
+                    onChange={(event) => setDownloadType(event.target.value)}
                     disabled={isDownloading}
-                  />
+                    className="download-type-radio-group"
+                    size="large"
+                    buttonStyle="solid"
+                  >
+                    <Radio.Button value="video">
+                      <Space size={6} align="center">
+                        <LuSquarePlay size={18} strokeWidth={2} />
+                        <span>
+                          视频（{VIDEO_QUALITY_LABELS[videoQuality] ?? "最高画质"}）
+                        </span>
+                      </Space>
+                    </Radio.Button>
+                    <Radio.Button value="audio">
+                      <Space size={6} align="center">
+                        <LuHeadphones size={18} strokeWidth={2} />
+                        <span>纯音频 (MP3)</span>
+                      </Space>
+                    </Radio.Button>
+                  </Radio.Group>
                 </Form.Item>
 
-                <Form.Item label="Cookies 浏览器">
+                <Form.Item label={cookieFieldLabel}>
                   <Select
                     value={browser}
                     onChange={(value) => setBrowser(value)}
                     disabled={isDownloading}
                     options={COOKIE_SOURCE_OPTIONS}
                   />
-                  <Text type="secondary" className="field-helper">
-                    选择浏览器后，工具会尝试读取该浏览器的 cookies 支持所有站点的下载（需浏览器已登录），也可以选择“不使用 Cookie”。
-                  </Text>
                 </Form.Item>
 
                 <Form.Item label="保存位置">
@@ -606,15 +634,8 @@ function App() {
                   </Space.Compact>
                 </Form.Item>
 
-                {(isUsingBrowserCookies || errorMessage || successMessage) && (
+                {(errorMessage || successMessage) && (
                   <Space direction="vertical" style={{ width: "100%" }}>
-                    {isUsingBrowserCookies && selectedBrowserOption && (
-                      <Alert
-                        type="info"
-                        showIcon
-                        message={`工具会尝试使用 ${selectedBrowserOption.label} 浏览器的 cookies 支持所有站点的下载（请确保该浏览器已登录）。`}
-                      />
-                    )}
                     {errorMessage && (
                       <Alert type="error" showIcon message={errorMessage} />
                     )}
@@ -633,7 +654,6 @@ function App() {
                       size="large"
                       style={{ marginTop: 5 }}
                       loading={isDownloading}
-                      disabled={!url.trim()}
                     >
                       {downloadButtonLabel}
                     </Button>

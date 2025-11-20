@@ -33,9 +33,27 @@ body {
   height: 54px;
 }
 
-.field-helper {
-  display: block;
-  margin-top: 8px;
+.url-input {
+  height: 52px;
+  padding: 12px 14px;
+  font-size: 16px;
+}
+
+.field-help-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.field-help-icon:hover,
+.field-help-icon:focus {
+  color: #2563eb;
+  outline: none;
 }
 
 .log-output {
@@ -57,10 +75,36 @@ body {
   padding: 8px 0;
 }
 
-.download-type-segmented .ant-segmented-item-label {
+.download-type-radio-group {
+  width: 100%;
+  display: flex;
+}
+
+.download-type-radio-group .ant-radio-button-wrapper {
+  flex: 1;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 6px;
+  height: 48px;
+  padding: 0 12px;
+  text-align: center;
+  font-size: 15px;
+  white-space: normal;
+}
+
+.download-type-radio-group
+  .ant-radio-button-wrapper:not(:first-of-type) {
+  border-left-width: 1px;
+}
+
+.download-type-radio-group
+  .ant-radio-button-wrapper:not(:first-of-type)::before {
+  display: none;
+}
+
+.download-type-radio-group .ant-radio-button-wrapper svg {
+  vertical-align: middle;
 }
 
 .app-footer {
@@ -84,17 +128,6 @@ body {
   100% {
     transform: rotate(360deg);
   }
-}
-
-.download-type-segmented .ant-segmented-item-label {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
-.download-type-segmented svg {
-  vertical-align: middle;
 }
 
 .supported-sites-list {

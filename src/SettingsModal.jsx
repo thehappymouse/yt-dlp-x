@@ -1,7 +1,7 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { DownloadOutlined, RedoOutlined } from "@ant-design/icons";
-import { Alert, Button, Flex, Modal, Segmented, Space, Tag, Tooltip, Typography } from "antd";
+import { Alert, Button, Flex, Modal, Radio, Space, Tag, Tooltip, Typography } from "antd";
 import { LuCircleAlert, LuCircleCheck, LuLoaderCircle } from "react-icons/lu";
 import {
   SiYoutube,
@@ -335,13 +335,18 @@ const SettingsModal = forwardRef(function SettingsModal(
         </Space>
         <Space direction="vertical" size="small" style={{ width: "100%" }}>
           <Text strong>默认视频画质</Text>
-          <Segmented
-            block
-            options={VIDEO_QUALITY_OPTIONS}
+          <Radio.Group
+            className="radio-card-group video-quality-radio-group"
             value={videoQuality}
-            onChange={handleVideoQualityChange}
+            onChange={(event) => handleVideoQualityChange(event.target.value)}
             disabled={isDownloading}
-          />
+          >
+            {VIDEO_QUALITY_OPTIONS.map(({ label, value }) => (
+              <Radio key={value} value={value}>
+                <span className="radio-option-label">{label}</span>
+              </Radio>
+            ))}
+          </Radio.Group>
           <Text type="secondary">{VIDEO_QUALITY_HINT}</Text>
         </Space>
         <Space direction="vertical" size="small" style={{ width: "100%" }}>

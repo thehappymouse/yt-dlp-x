@@ -497,6 +497,8 @@ function App() {
     return !settingsStatusSnapshot.ytInstalled;
   }, [settingsStatusSnapshot]);
 
+  const isUrlFieldEmpty = url.trim().length === 0;
+
   const cookieTooltipContent = (
     <div>
       <div>
@@ -534,11 +536,6 @@ function App() {
           borderRadiusXS: 2,
           borderRadiusOuter: 2,
         },
-        components: {
-          Segmented: {
-            controlHeight: 42,
-          },
-        },
       }}
     >
       <div className="app-background">
@@ -562,7 +559,14 @@ function App() {
 
             <Card>
               <Form layout="vertical" onSubmitCapture={handleDownload}>
-                <Form.Item label="视频链接" required>
+                <Form.Item
+                  label="视频链接"
+                  required
+                  validateStatus={isUrlFieldEmpty ? "warning" : undefined}
+                  help={
+                    isUrlFieldEmpty ? "请先输入需要下载的视频链接" : undefined
+                  }
+                >
                   <Input
                     ref={urlInputRef}
                     value={url}
@@ -580,24 +584,22 @@ function App() {
                     value={downloadType}
                     onChange={(event) => setDownloadType(event.target.value)}
                     disabled={isDownloading}
-                    className="download-type-radio-group"
-                    size="large"
-                    buttonStyle="solid"
+                    className="radio-card-group download-type-radio-group"
                   >
-                    <Radio.Button value="video">
-                      <Space size={6} align="center">
-                        <LuSquarePlay size={18} strokeWidth={2} />
+                    <Radio value="video">
+                      <span className="radio-option-label download-type-option-label">
+                        <LuSquarePlay size={16} strokeWidth={2} />
                         <span>
                           视频（{VIDEO_QUALITY_LABELS[videoQuality] ?? "最高画质"}）
                         </span>
-                      </Space>
-                    </Radio.Button>
-                    <Radio.Button value="audio">
-                      <Space size={6} align="center">
-                        <LuHeadphones size={18} strokeWidth={2} />
+                      </span>
+                    </Radio>
+                    <Radio value="audio">
+                      <span className="radio-option-label download-type-option-label">
+                        <LuHeadphones size={16} strokeWidth={2} />
                         <span>纯音频 (MP3)</span>
-                      </Space>
-                    </Radio.Button>
+                      </span>
+                    </Radio>
                   </Radio.Group>
                 </Form.Item>
 

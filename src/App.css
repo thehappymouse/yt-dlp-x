@@ -5,7 +5,7 @@ body {
 
 .app-background {
   min-height: 100vh;
-  padding: 32px 16px 48px;
+  padding: 28px 16px 44px;
   box-sizing: border-box;
 }
 
@@ -75,36 +75,73 @@ body {
   padding: 8px 0;
 }
 
-.download-type-radio-group {
+.radio-card-group {
   width: 100%;
   display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
-.download-type-radio-group .ant-radio-button-wrapper {
-  flex: 1;
+.radio-card-group .ant-radio-wrapper {
+  flex: 1 1 0;
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  min-height: 44px;
+  font-size: 14px;
+  color: #0f172a;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease,
+    background 0.2s ease, color 0.2s ease;
+}
+
+.radio-card-group .ant-radio-wrapper .ant-radio {
+  top: 0;
+  transform: scale(0.9);
+}
+
+.radio-card-group .ant-radio-wrapper:hover {
+  border-color: #94a3b8;
+}
+
+.radio-card-group .ant-radio-wrapper-checked {
+  border-color: #2563eb;
+  background: #f0f5ff;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.12);
+}
+
+.radio-card-group .ant-radio-wrapper-disabled {
+  background: #f8fafc;
+  color: #94a3b8;
+}
+
+.radio-option-label {
+  display: inline-flex;
+  align-items: center;
   gap: 6px;
-  height: 48px;
-  padding: 0 12px;
-  text-align: center;
-  font-size: 15px;
-  white-space: normal;
+  line-height: 1.4;
 }
 
-.download-type-radio-group
-  .ant-radio-button-wrapper:not(:first-of-type) {
-  border-left-width: 1px;
+.download-type-radio-group .ant-radio-wrapper {
+  flex: 1 1 240px;
 }
 
-.download-type-radio-group
-  .ant-radio-button-wrapper:not(:first-of-type)::before {
-  display: none;
+.download-type-option-label svg {
+  width: 16px;
+  height: 16px;
 }
 
-.download-type-radio-group .ant-radio-button-wrapper svg {
-  vertical-align: middle;
+.video-quality-radio-group .ant-radio-wrapper {
+  flex: 1 1 180px;
+}
+
+@media (max-width: 640px) {
+  .radio-card-group .ant-radio-wrapper {
+    flex: 1 1 100%;
+  }
 }
 
 .app-footer {

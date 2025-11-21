@@ -581,7 +581,6 @@ function App() {
                     onChange={(event) => setDownloadType(event.target.value)}
                     disabled={isDownloading}
                     className="download-type-radio-group"
-                    size="large"
                     buttonStyle="solid"
                   >
                     <Radio.Button value="video">

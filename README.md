@@ -11,10 +11,47 @@
 ## 功能亮点
 
 - 自动检测系统中的 `yt-dlp`，若未安装可在线下载最新版本。
+- `Settings` 中可查看当前 `yt-dlp` 的来源（system / bundled）与版本号。
 - 粘贴链接后，可一键选择下载 **最佳画质视频** 或 **纯音频 (MP3)**。
-- 针对 YouTube 链接，默认启用 `--cookies-from-browser`，支持从常用浏览器读取登录态。
+- 支持高级下载参数（文件名模板、重试、分片重试、文件访问重试、并发分片、重试间隔）。
 - 默认保存到系统下载目录，可自行修改并快速打开文件夹。
 - 直观的执行日志，方便排查错误。
+
+## yt-dlp 参数与兼容策略
+
+### 参数分层
+
+当前后端会按以下层级构造参数：
+
+1. **默认参数**：`--newline`、`--no-playlist`、`--continue`、`--no-mtime` 等。
+2. **模式参数**：
+   - 音频模式：`bestaudio/best` + `-x --audio-format mp3` + 封面处理。
+   - 视频模式：根据画质模板选择 format，并默认 `--merge-output-format mp4`。
+3. **可选参数**：`--cookies-from-browser`、`--ffmpeg-location`、重试/并发参数。
+4. **站点覆盖**：抖音链接优先使用 `--add-headers` 注入 `Referer` 和 `User-Agent`。
+
+### 兼容策略
+
+- 针对较新版本 `yt-dlp`（当前目标：2026.03.17），优先使用：
+  - `--add-headers "Referer: ..."`
+  - `--add-headers "User-Agent: ..."`
+- 如果检测到运行时不支持 `--add-headers`，自动回退到旧参数（`--referer` / `--user-agent`）。
+- 进度输出优先使用 `--progress-template` 生成稳定可解析行；若不可用则回退旧的 `[download] ...` 解析逻辑。
+- `--paths` 支持时自动启用 `home` 与 `temp` 分离（临时目录默认 `下载目录/.yt-dlp-temp`）。
+
+### 下载稳定性默认值
+
+- `-R/--retries`: `10`
+- `--fragment-retries`: `10`
+- `--file-access-retries`: `3`
+- `--retry-sleep`: `1`
+- `-N/--concurrent-fragments`: 默认 `1`（仅当 >1 时显式写入）
+
+## yt-dlp 安装与校验
+
+- 自动安装时会下载官方发布二进制，并读取 `SHA2-256SUMS` 进行 SHA-256 校验。
+- 下载后会执行 `yt-dlp --version` 做可执行性校验。
+- 校验失败会清理临时/损坏文件，避免后续命中坏 binary。
 
 ## 开发指引
 
@@ -30,6 +67,13 @@ $ yarn tauri build
 ```
 
 > 首次运行若缺少 `yt-dlp`，应用会自动下载对应平台的可执行文件并保存到应用数据目录。
+
+## 回归测试
+
+```bash
+# 运行 Rust 单元测试（参数构造、进度解析、校验解析）
+cd src-tauri && cargo test
+```
 
 ## 发布构建
 

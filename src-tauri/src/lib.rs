@@ -1,4 +1,6 @@
 mod utils;
+mod yt_dlp_args;
+mod yt_dlp_progress;
 
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -19,9 +21,10 @@ use utils::{
     ffmpeg::{self, BinarySource as FfmpegBinarySource},
     yt_dlp::{self, BinarySource as YtDlpBinarySource},
 };
-
-const DOUYIN_REFERER: &str = "https://www.douyin.com/";
-const DOUYIN_USER_AGENT: &str = "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1";
+use yt_dlp_args::{
+    build_yt_dlp_args, BuildYtDlpArgsInput, DownloadModeArg, DownloadTuning, VideoQualityArg,
+};
+use yt_dlp_progress::parse_progress_line;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -29,6 +32,7 @@ struct YtDlpStatus {
     installed: bool,
     path: Option<String>,
     source: Option<String>,
+    version: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -49,9 +53,15 @@ struct DownloadRequest {
     session_id: Option<String>,
     #[serde(default)]
     quality: VideoQuality,
+    filename_template: Option<String>,
+    retries: Option<u32>,
+    fragment_retries: Option<u32>,
+    file_access_retries: Option<u32>,
+    concurrent_fragments: Option<u32>,
+    retry_sleep: Option<String>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone, Copy)]
 #[serde(rename_all = "lowercase")]
 enum DownloadMode {
     Audio,
@@ -88,11 +98,13 @@ async fn check_yt_dlp() -> Result<YtDlpStatus, String> {
             installed: true,
             path: Some(path_to_string(&path)),
             source: Some(yt_dlp_source_label(source)),
+            version: yt_dlp::get_version(&path).ok(),
         },
         None => YtDlpStatus {
             installed: false,
             path: None,
             source: None,
+            version: None,
         },
     };
 
@@ -106,6 +118,7 @@ async fn install_yt_dlp() -> Result<YtDlpStatus, String> {
         installed: true,
         path: Some(path_to_string(&path)),
         source: Some(yt_dlp_source_label(YtDlpBinarySource::Bundled)),
+        version: yt_dlp::get_version(&path).ok(),
     })
 }
 
@@ -149,6 +162,12 @@ async fn download_media(
         output_dir,
         session_id,
         quality,
+        filename_template,
+        retries,
+        fragment_retries,
+        file_access_retries,
+        concurrent_fragments,
+        retry_sleep,
     } = request;
 
     let url = url.trim().to_string();
@@ -165,6 +184,7 @@ async fn download_media(
     let session_id = Arc::new(session_id);
 
     let (binary_path, _) = yt_dlp::ensure_available().await?;
+    let runtime_caps = yt_dlp::detect_capabilities(&binary_path);
 
     let output_dir = output_dir
         .as_deref()
@@ -177,56 +197,52 @@ async fn download_media(
         .await
         .map_err(|err| format!("无法创建下载目录: {err}"))?;
 
-    let mut args: Vec<String> = vec![
-        "--newline".into(),
-        "--no-playlist".into(),
-        "--continue".into(),
-        "--no-mtime".into(),
-        "-o".into(),
-        "%(title)s.%(ext)s".into(),
-        "-P".into(),
-        output_dir.to_string_lossy().to_string(),
-    ];
-
-    if let Some(browser) = browser
-        .as_deref()
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-    {
-        args.push("--cookies-from-browser".into());
-        args.push(browser.to_string());
+    let temp_dir = output_dir.join(".yt-dlp-temp");
+    if runtime_caps.supports_paths_temp {
+        fs::create_dir_all(&temp_dir)
+            .await
+            .map_err(|err| format!("无法创建临时目录: {err}"))?;
     }
 
     let ffmpeg_path = match mode {
         DownloadMode::Audio => {
             let (path, _) = ffmpeg::ensure_available()?;
-            args.push("-f".into());
-            args.push("bestaudio/best".into());
-            args.push("-x".into());
-            args.push("--audio-format".into());
-            args.push("mp3".into());
-            args.push("--embed-thumbnail".into());
-            args.push("--convert-thumbnails".into());
-            args.push("jpg".into());
             Some(path)
         }
-        DownloadMode::Video => {
-            args.push("-f".into());
-            args.push(video_format_for_quality(quality, &url));
-            args.push("--merge-output-format".into());
-            args.push("mp4".into());
-            ffmpeg::detect_existing()?.map(|(path, _)| path)
-        }
+        DownloadMode::Video => ffmpeg::detect_existing()?.map(|(path, _)| path),
     };
 
-    if let Some(ref path) = ffmpeg_path {
-        args.push("--ffmpeg-location".into());
-        args.push(path_to_string(path));
-    }
+    let mode_arg = match mode {
+        DownloadMode::Audio => DownloadModeArg::Audio,
+        DownloadMode::Video => DownloadModeArg::Video,
+    };
 
-    apply_site_specific_overrides(&mut args, &url);
+    let quality_arg = match quality {
+        VideoQuality::Low => VideoQualityArg::Low,
+        VideoQuality::Medium => VideoQualityArg::Medium,
+        VideoQuality::Highest => VideoQualityArg::Highest,
+    };
 
-    args.push(url.clone());
+    let tuning = DownloadTuning::with_overrides(
+        filename_template.as_deref(),
+        retries,
+        fragment_retries,
+        file_access_retries,
+        concurrent_fragments,
+        retry_sleep.as_deref(),
+    );
+
+    let args = build_yt_dlp_args(BuildYtDlpArgsInput {
+        url: &url,
+        mode: mode_arg,
+        browser: browser.as_deref(),
+        output_dir: &output_dir,
+        temp_dir: Some(&temp_dir),
+        quality: quality_arg,
+        ffmpeg_path: ffmpeg_path.as_deref(),
+        runtime_caps: &runtime_caps,
+        tuning,
+    });
 
     let mut command = Command::new(&binary_path);
     command.args(&args);
@@ -304,124 +320,6 @@ async fn download_media(
     })
 }
 
-fn apply_site_specific_overrides(args: &mut Vec<String>, url: &str) {
-    if is_douyin_url(url) {
-        args.push("--referer".into());
-        args.push(DOUYIN_REFERER.into());
-        args.push("--user-agent".into());
-        args.push(DOUYIN_USER_AGENT.into());
-    }
-}
-
-fn video_format_for_quality(quality: VideoQuality, url: &str) -> String {
-    match quality {
-        VideoQuality::Low => "bv*[height<=480]+ba/b[height<=480]/bv*[height<=720]+ba/b[height<=720]/worst".into(),
-        VideoQuality::Medium => "bv*[height<=1080]+ba/b[height<=1080]/bv*[height<=720]+ba/b[height<=720]/b".into(),
-        VideoQuality::Highest => {
-            if is_bilibili_url(url) {
-                "bv*[height>=2160]+ba/bv*[height>=1080]+ba/bv*+ba/b".into()
-            } else {
-                "bv*+ba/b".into()
-            }
-        }
-    }
-}
-
-fn is_bilibili_url(url: &str) -> bool {
-    let lower = url.to_ascii_lowercase();
-    lower.contains("bilibili.com")
-        || lower.contains("b23.tv")
-        || lower.contains("bilivideo.com")
-        || lower.contains("acg.tv")
-}
-
-fn is_douyin_url(url: &str) -> bool {
-    let lower = url.to_ascii_lowercase();
-    lower.contains("douyin.com") || lower.contains("iesdouyin.com")
-}
-
-struct ProgressInfo {
-    percent: f64,
-    percent_str: String,
-    eta: Option<String>,
-    speed: Option<String>,
-    total: Option<String>,
-    status: Option<String>,
-    raw: String,
-}
-
-fn parse_progress_line(line: &str) -> Option<ProgressInfo> {
-    if !line.starts_with("[download]") {
-        return None;
-    }
-
-    let trimmed = line.trim_start_matches("[download]").trim();
-    let (percent_part, rest_part) = trimmed.split_once('%')?;
-    let percent_str = percent_part.trim();
-    if percent_str.is_empty() {
-        return None;
-    }
-
-    let percent_value = percent_str.parse::<f64>().ok()?;
-    let percent_display = format!("{percent_str}%");
-    let rest = rest_part.trim();
-
-    let mut eta = None;
-
-    if let Some(index) = rest.rfind("ETA ") {
-        let value = rest[index + 4..].trim();
-        if !value.is_empty() {
-            eta = Some(value.to_string());
-        }
-    } else if let Some(index) = rest.rfind(" in ") {
-        let value = rest[index + 4..].trim();
-        if !value.is_empty() {
-            eta = Some(value.to_string());
-        }
-    }
-
-    let mut speed = None;
-    if let Some(index) = rest.find(" at ") {
-        let after = &rest[index + 4..];
-        if let Some(token) = after.split_whitespace().next() {
-            let cleaned = token.trim().trim_end_matches(',');
-            if !cleaned.is_empty() {
-                speed = Some(cleaned.to_string());
-            }
-        }
-    }
-
-    let mut total = None;
-    if let Some(after_of) = rest.trim_start().strip_prefix("of ") {
-        let mut end_index = after_of.len();
-        for marker in [" at ", " ETA ", " in "] {
-            if let Some(idx) = after_of.find(marker) {
-                end_index = end_index.min(idx);
-            }
-        }
-        let candidate = after_of[..end_index].trim().trim_end_matches(',');
-        if !candidate.is_empty() {
-            total = Some(candidate.to_string());
-        }
-    }
-
-    let mut status = None;
-    if rest.contains(" in ") || percent_value >= 100.0 {
-        status = Some("finished".to_string());
-    } else if rest.contains("ETA") || !rest.is_empty() {
-        status = Some("downloading".to_string());
-    }
-
-    Some(ProgressInfo {
-        percent: percent_value,
-        percent_str: percent_display,
-        eta,
-        speed,
-        total,
-        status,
-        raw: trimmed.to_string(),
-    })
-}
 
 async fn forward_stream<R>(
     reader: R,
@@ -452,27 +350,17 @@ where
         }
 
         if let Some(progress) = parse_progress_line(&line) {
-            let ProgressInfo {
-                percent,
-                percent_str,
-                eta,
-                speed,
-                total,
-                status,
-                raw,
-            } = progress;
-
             if let Err(err) = window.emit(
                 "download-progress",
                 json!({
                     "sessionId": session_id.as_ref(),
-                    "percent": percent,
-                    "percentText": percent_str,
-                    "eta": eta,
-                    "speed": speed,
-                    "total": total,
-                    "status": status,
-                    "raw": raw,
+                    "percent": progress.percent,
+                    "percentText": progress.percent_str,
+                    "eta": progress.eta,
+                    "speed": progress.speed,
+                    "total": progress.total,
+                    "status": progress.status,
+                    "raw": progress.raw,
                 }),
             ) {
                 eprintln!("Failed to emit progress event: {err}");
@@ -612,7 +500,7 @@ fn exit_status_message(status: std::process::ExitStatus) -> String {
         .unwrap_or_else(|| "未知".into())
 }
 
-fn path_to_string(path: &PathBuf) -> String {
+fn path_to_string(path: &Path) -> String {
     path.to_string_lossy().to_string()
 }
 

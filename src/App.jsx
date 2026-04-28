@@ -30,7 +30,6 @@ import {
 } from "react-icons/lu";
 import About from "./About";
 import SettingsModal from "./SettingsModal";
-import { APP_VERSION } from "./version";
 import { extractErrorMessage } from "./utils/errors";
 import "./App.css";
 import logo from "./assets/logo.png";
@@ -58,12 +57,23 @@ const VIDEO_QUALITY_LABELS = {
   highest: "最高画质",
 };
 
+const DEFAULT_ADVANCED_DOWNLOAD_OPTIONS = {
+  filenameTemplate: "%(title).150B [%(id)s].%(ext)s",
+  retries: 10,
+  fragmentRetries: 10,
+  fileAccessRetries: 3,
+  concurrentFragments: 1,
+  retrySleep: "1",
+};
 
 function App() {
   const [url, setUrl] = useState("");
   const [browser, setBrowser] = useState(DEFAULT_BROWSER);
   const [downloadType, setDownloadType] = useState("video");
   const [videoQuality, setVideoQuality] = useState("highest");
+  const [advancedDownloadOptions, setAdvancedDownloadOptions] = useState(
+    DEFAULT_ADVANCED_DOWNLOAD_OPTIONS
+  );
   const [outputDir, setOutputDir] = useState("");
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(null);
@@ -298,6 +308,12 @@ function App() {
           outputDir,
           sessionId,
           quality: videoQuality,
+          filenameTemplate: advancedDownloadOptions.filenameTemplate,
+          retries: advancedDownloadOptions.retries,
+          fragmentRetries: advancedDownloadOptions.fragmentRetries,
+          fileAccessRetries: advancedDownloadOptions.fileAccessRetries,
+          concurrentFragments: advancedDownloadOptions.concurrentFragments,
+          retrySleep: advancedDownloadOptions.retrySleep,
         },
       });
 
@@ -390,6 +406,17 @@ function App() {
     },
     [setVideoQuality]
   );
+
+  const handleAdvancedDownloadOptionsChange = useCallback((nextOptions) => {
+    if (!nextOptions || typeof nextOptions !== "object") {
+      return;
+    }
+
+    setAdvancedDownloadOptions((prev) => ({
+      ...prev,
+      ...nextOptions,
+    }));
+  }, []);
 
   const handleSettingsStatusChange = useCallback((nextStatus) => {
     setSettingsStatusSnapshot((prev) => {
@@ -715,6 +742,8 @@ function App() {
         onStatusChange={handleSettingsStatusChange}
         videoQuality={videoQuality}
         onVideoQualityChange={handleVideoQualityUpdate}
+        advancedDownloadOptions={advancedDownloadOptions}
+        onAdvancedDownloadOptionsChange={handleAdvancedDownloadOptionsChange}
       />
 
       <Drawer
